@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 
+
 // Dummy data
 const dummyStats = {
   totalSupply: '1,000,000 SPHR',
@@ -87,7 +88,7 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { 
               title: 'Total Supply', 
@@ -120,32 +121,29 @@ export default function Dashboard() {
               className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05, duration: 0.2 }}
-              whileHover={{ y: -2, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
             >
-              <div className="p-5">
-                <div className="flex items-center mb-3">
-                  <div className={`p-2 rounded-md ${stat.color}`}>
-                    <stat.icon className="h-5 w-5" />
+              <div className="p-6">
+                <div className="flex items-center">
+                  <div className={`p-3 rounded-full ${stat.color}`}>
+                    <stat.icon className="h-6 w-6" />
                   </div>
-                  <p className="ml-3 text-sm font-medium text-gray-700">
-                    {stat.title}
-                  </p>
-                </div>
-                <div className="flex items-baseline">
-                  <p className="text-xl font-semibold text-gray-900">
-                    {isLoading ? '...' : stat.value}
-                  </p>
-                  {stat.change && (
-                    <span className="ml-2 text-sm font-medium text-green-600">
-                      {stat.change}
-                    </span>
-                  )}
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+                    <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+                    {stat.change && (
+                      <p className={`text-sm ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                        {stat.change}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
+
+       
 
         <motion.div
           className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm"
