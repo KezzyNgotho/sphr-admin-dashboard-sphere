@@ -4,13 +4,16 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
-import { 
-  CurrencyDollarIcon, 
-  UserGroupIcon, 
+import {
+  CurrencyDollarIcon,
+  UserGroupIcon,
   ShieldCheckIcon,
-  ArrowTrendingUpIcon
+  ArrowTrendingUpIcon,
+  ClockIcon,
+  ArrowPathIcon,
+  BanknotesIcon,
+  UserIcon
 } from '@heroicons/react/24/outline'
-
 import { useAuth } from '@/contexts/AuthContext'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 
@@ -26,31 +29,28 @@ const dummyStats = {
   lastUpdate: '2 minutes ago'
 }
 
+const recentActivity = [
+  { id: 1, type: 'Token Transfer', time: '2 hours ago', amount: '+1,000 SPHR', status: 'Completed', icon: BanknotesIcon },
+  { id: 2, type: 'Exchange Rate Update', time: '4 hours ago', amount: '0.85 → 0.87', status: 'Completed', icon: ArrowPathIcon },
+  { id: 3, type: 'New User Registration', time: '6 hours ago', amount: 'ID #28491', status: 'Verified', icon: UserIcon }
+]
+
 const fetchDummyData = async () => {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000))
   return dummyStats
 }
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-}
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 }
+const fadeIn = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 }
 }
 
 export default function Dashboard() {
   const { user } = useAuth()
   const router = useRouter()
-
+  
   const { data: stats, isLoading } = useQuery({
     queryKey: ['dashboardStats'],
     queryFn: fetchDummyData,
@@ -69,173 +69,120 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <motion.div 
-        className="space-y-6"
-        initial="hidden"
-        animate="show"
-        variants={container}
-      >
-        <motion.div variants={item}>
-          <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Welcome back, {user.address.slice(0, 6)}...{user.address.slice(-4)}
-          </p>
-        </motion.div>
-
+      <div className="space-y-6">
         <motion.div 
-          className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
-          variants={item}
+          className="flex items-center justify-between"
+          {...fadeIn}
+          transition={{ duration: 0.2 }}
         >
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow-lg hover:shadow-xl transition-shadow duration-300"
-          >
-            <dt>
-              <div className="absolute rounded-md bg-gradient-to-r from-indigo-500 to-purple-600 p-3">
-                <CurrencyDollarIcon className="h-6 w-6 text-white" aria-hidden="true" />
-              </div>
-              <p className="ml-16 truncate text-sm font-medium text-gray-500">
-                Total Supply
-              </p>
-            </dt>
-            <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
-              <p className="text-2xl font-semibold text-gray-900">
-                {isLoading ? '...' : stats?.totalSupply}
-              </p>
-            </dd>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow-lg hover:shadow-xl transition-shadow duration-300"
-          >
-            <dt>
-              <div className="absolute rounded-md bg-gradient-to-r from-green-500 to-emerald-600 p-3">
-                <UserGroupIcon className="h-6 w-6 text-white" aria-hidden="true" />
-              </div>
-              <p className="ml-16 truncate text-sm font-medium text-gray-500">
-                Active Users
-              </p>
-            </dt>
-            <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
-              <p className="text-2xl font-semibold text-gray-900">
-                {isLoading ? '...' : stats?.activeUsers}
-              </p>
-            </dd>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow-lg hover:shadow-xl transition-shadow duration-300"
-          >
-            <dt>
-              <div className="absolute rounded-md bg-gradient-to-r from-blue-500 to-cyan-600 p-3">
-                <ArrowTrendingUpIcon className="h-6 w-6 text-white" aria-hidden="true" />
-              </div>
-              <p className="ml-16 truncate text-sm font-medium text-gray-500">
-                Exchange Rate
-              </p>
-            </dt>
-            <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
-              <p className="text-2xl font-semibold text-gray-900">
-                {isLoading ? '...' : stats?.exchangeRate}
-              </p>
-              <span className="ml-2 flex items-baseline text-sm font-semibold text-green-600">
-                {stats?.priceChange}
-              </span>
-            </dd>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow-lg hover:shadow-xl transition-shadow duration-300"
-          >
-            <dt>
-              <div className="absolute rounded-md bg-gradient-to-r from-red-500 to-pink-600 p-3">
-                <ShieldCheckIcon className="h-6 w-6 text-white" aria-hidden="true" />
-              </div>
-              <p className="ml-16 truncate text-sm font-medium text-gray-500">
-                Security Status
-              </p>
-            </dt>
-            <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
-              <p className="text-2xl font-semibold text-gray-900">
-                {isLoading ? '...' : stats?.securityStatus}
-              </p>
-            </dd>
-          </motion.div>
-        </motion.div>
-
-        <motion.div 
-          className="bg-white shadow-lg rounded-lg overflow-hidden"
-          variants={item}
-        >
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">
-              Quick Actions
-            </h3>
-            <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center justify-center rounded-md border border-transparent bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-              >
-                Mint Tokens
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center justify-center rounded-md border border-transparent bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-              >
-                Update Exchange Rate
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center justify-center rounded-md border border-transparent bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:from-blue-700 hover:to-cyan-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                Manage Roles
-              </motion.button>
-            </div>
+          <div>
+            <h1 className="text-xl font-medium text-gray-800">Dashboard</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              {user.address.slice(0, 6)}...{user.address.slice(-4)} • Last updated: {stats?.lastUpdate || 'loading...'}
+            </p>
+          </div>
+          <div className="text-sm text-gray-500 flex items-center">
+            <ClockIcon className="h-4 w-4 mr-1" />
+            Auto-refreshes every 30s
           </div>
         </motion.div>
 
-        <motion.div 
-          className="bg-white shadow-lg rounded-lg overflow-hidden"
-          variants={item}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { 
+              title: 'Total Supply', 
+              value: stats?.totalSupply, 
+              icon: CurrencyDollarIcon, 
+              color: 'bg-indigo-100 text-indigo-700' 
+            },
+            { 
+              title: 'Active Users', 
+              value: stats?.activeUsers, 
+              icon: UserGroupIcon, 
+              color: 'bg-emerald-100 text-emerald-700' 
+            },
+            { 
+              title: 'Exchange Rate', 
+              value: stats?.exchangeRate, 
+              icon: ArrowTrendingUpIcon, 
+              color: 'bg-blue-100 text-blue-700',
+              change: stats?.priceChange
+            },
+            { 
+              title: 'Security Status', 
+              value: stats?.securityStatus, 
+              icon: ShieldCheckIcon, 
+              color: 'bg-rose-100 text-rose-700' 
+            }
+          ].map((stat, index) => (
+            <motion.div
+              key={stat.title}
+              className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05, duration: 0.2 }}
+              whileHover={{ y: -2, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+            >
+              <div className="p-5">
+                <div className="flex items-center mb-3">
+                  <div className={`p-2 rounded-md ${stat.color}`}>
+                    <stat.icon className="h-5 w-5" />
+                  </div>
+                  <p className="ml-3 text-sm font-medium text-gray-700">
+                    {stat.title}
+                  </p>
+                </div>
+                <div className="flex items-baseline">
+                  <p className="text-xl font-semibold text-gray-900">
+                    {isLoading ? '...' : stat.value}
+                  </p>
+                  {stat.change && (
+                    <span className="ml-2 text-sm font-medium text-green-600">
+                      {stat.change}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.div
+          className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.2 }}
         >
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">
-              Recent Activity
-            </h3>
-            <div className="mt-5 space-y-4">
-              {[1, 2, 3].map((item) => (
-                <motion.div
-                  key={item}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: item * 0.1 }}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                >
-                  <div className="flex items-center">
-                    <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                      <CurrencyDollarIcon className="h-5 w-5 text-indigo-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-900">Token Transfer</p>
-                      <p className="text-sm text-gray-500">2 hours ago</p>
-                    </div>
+          <div className="px-5 py-4 border-b border-gray-200">
+            <h3 className="text-base font-medium text-gray-800">Recent Activity</h3>
+          </div>
+          <div className="divide-y divide-gray-200">
+            {recentActivity.map((activity, index) => (
+              <motion.div
+                key={activity.id}
+                className="px-5 py-4 flex items-center justify-between hover:bg-gray-50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 + index * 0.05 }}
+              >
+                <div className="flex items-center">
+                  <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                    <activity.icon className="h-5 w-5 text-gray-600" />
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-green-600">+1,000 SPHR</p>
-                    <p className="text-xs text-gray-500">Completed</p>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-800">{activity.type}</p>
+                    <p className="text-sm text-gray-500">{activity.time}</p>
                   </div>
-                </motion.div>
-              ))}
-            </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-800">{activity.amount}</p>
+                  <p className="text-sm text-gray-500">{activity.status}</p>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
-      </motion.div>
+      </div>
     </DashboardLayout>
   )
-} 
+}

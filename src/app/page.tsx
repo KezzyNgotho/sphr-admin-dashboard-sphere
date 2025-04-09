@@ -27,15 +27,15 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0F0F0F] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background elements */}
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-10"></div>
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5"></div>
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-[0.03]"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1A1A1A] via-[#0F0F0F] to-[#1A1A1A]"></div>
       
       {/* Animated lines */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-r from-transparent via-indigo-500/10 to-transparent animate-[spin_20s_linear_infinite]"></div>
-        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-r from-transparent via-purple-500/10 to-transparent animate-[spin_15s_linear_infinite]"></div>
+        <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-r from-transparent via-[#3B82F6]/5 to-transparent animate-[spin_20s_linear_infinite]"></div>
+        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-r from-transparent via-[#8B5CF6]/5 to-transparent animate-[spin_15s_linear_infinite]"></div>
       </div>
       
       <motion.div 
@@ -44,10 +44,10 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl ring-1 ring-white/5 p-8 relative overflow-hidden">
+        <div className="bg-[#1A1A1A]/80 backdrop-blur-xl rounded-3xl shadow-2xl ring-1 ring-white/5 p-8 relative overflow-hidden">
           {/* Card border gradient */}
-          <div className="absolute inset-0 rounded-3xl p-[1px] bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-pink-500/20">
-            <div className="absolute inset-0 rounded-3xl bg-black/40 backdrop-blur-xl"></div>
+          <div className="absolute inset-0 rounded-3xl p-[1px] bg-gradient-to-br from-[#3B82F6]/20 via-[#8B5CF6]/20 to-[#EC4899]/20">
+            <div className="absolute inset-0 rounded-3xl bg-[#1A1A1A]/80 backdrop-blur-xl"></div>
           </div>
           
           <div className="flex flex-col items-center relative z-10">
@@ -57,7 +57,7 @@ export default function Home() {
               transition={{ delay: 0.2, duration: 0.5 }}
               className="w-24 h-24 mb-6 relative"
             >
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 blur-xl"></div>
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#3B82F6]/20 to-[#8B5CF6]/20 blur-xl"></div>
         <Image
                 src="/logo.svg"
                 alt="SPHR Logo"
@@ -67,7 +67,7 @@ export default function Home() {
           priority
         />
               <motion.div
-                className="absolute inset-0 rounded-2xl border border-indigo-500/30"
+                className="absolute inset-0 rounded-2xl border border-[#3B82F6]/30"
                 animate={{
                   scale: [1, 1.05, 1],
                   opacity: [0.5, 0.8, 0.5],
@@ -90,7 +90,7 @@ export default function Home() {
             </motion.h2>
             
             <motion.p 
-              className="mt-2 text-center text-sm text-gray-400 font-medium"
+              className="mt-2 text-center text-sm text-[#A1A1AA] font-medium"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.5 }}
@@ -110,7 +110,7 @@ export default function Home() {
               whileTap={{ scale: 0.98 }}
               onClick={handleConnect}
               disabled={isConnecting}
-              className={`w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 relative overflow-hidden group ${
+              className={`w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl text-sm font-medium text-white bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:from-[#2563EB] hover:to-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3B82F6] transition-all duration-200 relative overflow-hidden group ${
                 isConnecting ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
@@ -145,10 +145,10 @@ export default function Home() {
               )}
             </motion.button>
 
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
+            <div className="flex items-center justify-center gap-2 text-sm text-[#A1A1AA]">
               <button
                 onClick={() => setShowSecurityInfo(!showSecurityInfo)}
-                className="flex items-center gap-1.5 hover:text-gray-300 transition-colors group"
+                className="flex items-center gap-1.5 hover:text-[#E4E4E7] transition-colors group"
               >
                 <svg className="h-4 w-4 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -163,22 +163,22 @@ export default function Home() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="text-sm text-gray-400 space-y-2 bg-black/20 rounded-xl p-4 backdrop-blur-sm"
+                  className="text-sm text-[#A1A1AA] space-y-2 bg-[#1A1A1A]/40 rounded-xl p-4 backdrop-blur-sm"
                 >
                   <div className="flex items-start gap-2">
-                    <svg className="h-4 w-4 mt-0.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-4 w-4 mt-0.5 text-[#3B82F6]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     <p>Your wallet connection is secure and encrypted</p>
                   </div>
                   <div className="flex items-start gap-2">
-                    <svg className="h-4 w-4 mt-0.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-4 w-4 mt-0.5 text-[#3B82F6]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     <p>We never store your private keys</p>
                   </div>
                   <div className="flex items-start gap-2">
-                    <svg className="h-4 w-4 mt-0.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-4 w-4 mt-0.5 text-[#3B82F6]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     <p>All transactions require your explicit approval</p>
@@ -194,14 +194,14 @@ export default function Home() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
               >
-                <p className="text-sm text-red-400">
+                <p className="text-sm text-[#EF4444]">
                   MetaMask is not installed. Please install it to continue.
                 </p>
                 <a
                   href="https://metamask.io/download/"
           target="_blank"
           rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center text-sm text-indigo-400 hover:text-indigo-300 transition-colors duration-200 group"
+                  className="mt-2 inline-flex items-center text-sm text-[#3B82F6] hover:text-[#60A5FA] transition-colors duration-200 group"
                 >
                   <span>Download MetaMask</span>
                   <svg className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
