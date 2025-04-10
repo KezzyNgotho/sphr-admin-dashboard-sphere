@@ -1,216 +1,205 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+import DashboardLayout from '@/components/layout/DashboardLayout'
+import Card from '@/components/ui/Card'
+import Table from '@/components/ui/Table'
+import { TableRow, TableCell } from '@/components/ui/Table'
 import {
   CurrencyDollarIcon,
-  PauseCircleIcon,
-  PlayCircleIcon,
+  ArrowTrendingUpIcon,
+  UserGroupIcon,
   ArrowPathIcon,
-  UserPlusIcon,
-  UserMinusIcon,
-  ArrowUpIcon,
-  ArrowDownIcon
+  BanknotesIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline'
-import DashboardLayout from '@/components/layout/DashboardLayout'
-import { useAuth } from '@/contexts/AuthContext'
 
-// Dummy data for development
-const dummyTokenData = {
+// Dummy data
+const tokenStats = {
   totalSupply: '1,000,000 SPHR',
-  isTransferable: true,
-  isPaused: false,
-  decimals: 18,
-  symbol: 'SPHR',
-  roles: {
-    DEFAULT_ADMIN: ['0x1234...5678'],
-    MINTER: ['0x1234...5678'],
-    BURNER: ['0x1234...5678'],
-    PAUSER: ['0x1234...5678']
-  }
+  marketCap: '$25.4M',
+  price: '$25.40',
+  priceChange: '+2.5%',
+  holders: '1,892',
+  volume24h: '$1.2M',
+  transactions: '4,231'
 }
 
-const fetchTokenData = async () => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  return dummyTokenData
-}
+const recentTransactions = [
+  {
+    id: 1,
+    type: 'Transfer',
+    amount: '+1,000 SPHR',
+    from: '0x1234...5678',
+    to: '0x8765...4321',
+    time: '2 hours ago',
+    status: 'Completed'
+  },
+  {
+    id: 2,
+    type: 'Mint',
+    amount: '+500 SPHR',
+    from: 'System',
+    to: '0x8765...4321',
+    time: '4 hours ago',
+    status: 'Completed'
+  },
+  {
+    id: 3,
+    type: 'Burn',
+    amount: '-200 SPHR',
+    from: '0x1234...5678',
+    to: 'System',
+    time: '6 hours ago',
+    status: 'Completed'
+  }
+]
 
 export default function TokenPage() {
-  const { user } = useAuth()
-  const [showMintModal, setShowMintModal] = useState(false)
-  const [showBurnModal, setShowBurnModal] = useState(false)
-  const [showRoleModal, setShowRoleModal] = useState(false)
-  const [selectedRole, setSelectedRole] = useState('')
-
-  const { data: tokenData, isLoading } = useQuery({
-    queryKey: ['tokenData'],
-    queryFn: fetchTokenData,
-    refetchInterval: 30000 // Refetch every 30 seconds
-  })
-
-  const handleMint = async (address: string, amount: string) => {
-    // TODO: Implement mint functionality
-    console.log('Minting', amount, 'to', address)
-  }
-
-  const handleBurn = async (address: string, amount: string) => {
-    // TODO: Implement burn functionality
-    console.log('Burning', amount, 'from', address)
-  }
-
-  const handleRoleChange = async (role: string, address: string, action: 'grant' | 'revoke') => {
-    // TODO: Implement role change functionality
-    console.log(action, role, 'for', address)
-  }
+  const [isLoading, setIsLoading] = useState(false)
+  const [tokenAmount, setTokenAmount] = useState('')
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <motion.div 
-          className="flex items-center justify-between"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-        >
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-medium text-gray-800">Token Management</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Manage SPHR token operations and roles
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Token Management</h1>
+            <p className="mt-1 text-sm text-gray-400">
+              Manage your SPHR tokens
             </p>
           </div>
-        </motion.div>
-
-        {/* Token Status Cards */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { 
-              title: 'Total Supply', 
-              value: tokenData?.totalSupply, 
-              icon: CurrencyDollarIcon, 
-              color: 'bg-indigo-100 text-indigo-700' 
-            },
-            { 
-              title: 'Transferable', 
-              value: tokenData?.isTransferable ? 'Yes' : 'No', 
-              icon: ArrowPathIcon, 
-              color: tokenData?.isTransferable ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-            },
-            { 
-              title: 'Paused', 
-              value: tokenData?.isPaused ? 'Yes' : 'No', 
-              icon: tokenData?.isPaused ? PauseCircleIcon : PlayCircleIcon, 
-              color: tokenData?.isPaused ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
-            },
-            { 
-              title: 'Decimals', 
-              value: tokenData?.decimals, 
-              icon: CurrencyDollarIcon, 
-              color: 'bg-blue-100 text-blue-700' 
-            }
-          ].map((stat, index) => (
-            <motion.div
-              key={stat.title}
-              className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05, duration: 0.2 }}
-            >
-              <div className="p-5">
-                <div className="flex items-center mb-3">
-                  <div className={`p-2 rounded-md ${stat.color}`}>
-                    <stat.icon className="h-5 w-5" />
-                  </div>
-                  <p className="ml-3 text-sm font-medium text-gray-700">
-                    {stat.title}
-                  </p>
-                </div>
-                <p className="text-xl font-semibold text-gray-900">
-                  {isLoading ? '...' : stat.value}
-                </p>
-              </div>
-            </motion.div>
-          ))}
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+              <span className="text-sm text-gray-400">Live</span>
+            </div>
+            <div className="text-sm text-gray-400">
+              Last updated: 2 minutes ago
+            </div>
+          </div>
         </div>
 
-        {/* Admin Actions */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <motion.div
-            className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.2 }}
-          >
-            <div className="px-5 py-4 border-b border-gray-200">
-              <h3 className="text-base font-medium text-gray-800">Token Operations</h3>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card title="Total Supply" icon={CurrencyDollarIcon} color="blue">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-white">{tokenStats.totalSupply}</p>
+                <p className="text-xs text-blue-400 mt-1">Market Cap: {tokenStats.marketCap}</p>
+              </div>
+              <div className="p-3 bg-blue-900/20 rounded-lg backdrop-blur-sm">
+                <CurrencyDollarIcon className="h-6 w-6 text-blue-400" />
+              </div>
             </div>
-            <div className="p-5 space-y-4">
-              <button
-                onClick={() => setShowMintModal(true)}
-                className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                <ArrowUpIcon className="h-5 w-5 mr-2" />
+          </Card>
+
+          <Card title="Price" icon={ArrowTrendingUpIcon} color="indigo">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-white">{tokenStats.price}</p>
+                <p className="text-xs text-indigo-400 mt-1">24h Change: {tokenStats.priceChange}</p>
+              </div>
+              <div className="p-3 bg-indigo-900/20 rounded-lg backdrop-blur-sm">
+                <ArrowTrendingUpIcon className="h-6 w-6 text-indigo-400" />
+              </div>
+            </div>
+          </Card>
+
+          <Card title="Holders" icon={UserGroupIcon} color="emerald">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-white">{tokenStats.holders}</p>
+                <p className="text-xs text-emerald-400 mt-1">24h Transactions: {tokenStats.transactions}</p>
+              </div>
+              <div className="p-3 bg-emerald-900/20 rounded-lg backdrop-blur-sm">
+                <UserGroupIcon className="h-6 w-6 text-emerald-400" />
+              </div>
+            </div>
+          </Card>
+
+          <Card title="Volume" icon={ChartBarIcon} color="purple">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-white">{tokenStats.volume24h}</p>
+                <p className="text-xs text-purple-400 mt-1">Last Updated: 2 minutes ago</p>
+              </div>
+              <div className="p-3 bg-purple-900/20 rounded-lg backdrop-blur-sm">
+                <ChartBarIcon className="h-6 w-6 text-purple-400" />
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Recent Transactions */}
+        <div>
+          <h2 className="text-xl font-semibold text-white mb-4">Recent Transactions</h2>
+          <Table headers={['Type', 'Amount', 'From', 'To', 'Time', 'Status']}>
+            {recentTransactions.map((tx) => (
+              <TableRow key={tx.id}>
+                <TableCell>
+                  <div className="flex items-center">
+                    <div className="p-2 bg-blue-900/20 rounded-lg backdrop-blur-sm">
+                      <BanknotesIcon className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <span className="ml-2 text-gray-300">{tx.type}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span className="text-gray-300">{tx.amount}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-gray-300">{tx.from}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-gray-300">{tx.to}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-gray-300">{tx.time}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-900/20 text-emerald-400 border border-emerald-800/30 backdrop-blur-sm">
+                    {tx.status}
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </Table>
+        </div>
+
+        {/* Token Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card title="Mint Tokens" icon={ArrowTrendingUpIcon} color="blue">
+            <div className="mt-4">
+              <input
+                type="number"
+                value={tokenAmount}
+                onChange={(e) => setTokenAmount(e.target.value)}
+                placeholder="0.0"
+                className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              />
+              <button className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900">
                 Mint Tokens
               </button>
-              <button
-                onClick={() => setShowBurnModal(true)}
-                className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
-              >
-                <ArrowDownIcon className="h-5 w-5 mr-2" />
+            </div>
+          </Card>
+
+          <Card title="Burn Tokens" icon={ArrowPathIcon} color="purple">
+            <div className="mt-4">
+              <input
+                type="number"
+                value={tokenAmount}
+                onChange={(e) => setTokenAmount(e.target.value)}
+                placeholder="0.0"
+                className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
+              />
+              <button className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:from-red-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900">
                 Burn Tokens
               </button>
             </div>
-          </motion.div>
-
-          <motion.div
-            className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.2 }}
-          >
-            <div className="px-5 py-4 border-b border-gray-200">
-              <h3 className="text-base font-medium text-gray-800">Role Management</h3>
-            </div>
-            <div className="p-5 space-y-4">
-              {Object.entries(tokenData?.roles || {}).map(([role, addresses]) => (
-                <div key={role} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">{role}</span>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedRole(role)
-                          setShowRoleModal(true)
-                        }}
-                        className="text-indigo-600 hover:text-indigo-700"
-                      >
-                        <UserPlusIcon className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedRole(role)
-                          setShowRoleModal(true)
-                        }}
-                        className="text-rose-600 hover:text-rose-700"
-                      >
-                        <UserMinusIcon className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {addresses.map((addr: string) => (
-                      <div key={addr}>{addr}</div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
+          </Card>
         </div>
       </div>
-
-      {/* Modals will be implemented here */}
     </DashboardLayout>
   )
 } 

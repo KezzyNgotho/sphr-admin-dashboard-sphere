@@ -2,58 +2,68 @@
 
 import { useState } from 'react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
-import ContractLifecycle from '@/components/dashboard/ContractLifecycle'
-import { motion } from 'framer-motion'
+import { DocumentTextIcon } from '@heroicons/react/24/outline'
 
 export default function ContractsPage() {
-  const [isLoading, setIsLoading] = useState(false)
+  const [contracts, setContracts] = useState([
+    {
+      id: '1',
+      name: 'Token Contract',
+      address: '0x1234...5678',
+      status: 'active',
+      lastUpdated: '2024-03-15'
+    },
+    {
+      id: '2',
+      name: 'Exchange Contract',
+      address: '0x8765...4321',
+      status: 'pending',
+      lastUpdated: '2024-03-14'
+    }
+  ])
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700 p-6"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contract Lifecycle</h1>
-            <div className="flex items-center space-x-4">
-              <button
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                Export Contracts
-              </button>
-              <button
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              >
-                New Contract
-              </button>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Contracts</h1>
+            <p className="mt-1 text-sm text-gray-400">
+              Manage your smart contracts
+            </p>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Contracts</h3>
-              <p className="text-2xl font-semibold text-green-600 dark:text-green-400">12</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {contracts.map((contract) => (
+            <div key={contract.id} className="bg-gray-900/50 rounded-lg p-6 backdrop-blur-sm border border-gray-800/30">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 rounded-full bg-blue-500/10">
+                  <DocumentTextIcon className="h-5 w-5 text-blue-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">{contract.name}</h3>
+              </div>
+              <div className="mt-4 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-400">Address</span>
+                  <span className="text-sm text-white">{contract.address}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-400">Status</span>
+                  <span className={`text-sm ${
+                    contract.status === 'active' ? 'text-green-400' : 'text-yellow-400'
+                  }`}>
+                    {contract.status}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-400">Last Updated</span>
+                  <span className="text-sm text-white">{contract.lastUpdated}</span>
+                </div>
+              </div>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Contracts</h3>
-              <p className="text-2xl font-semibold text-yellow-600 dark:text-yellow-400">3</p>
-            </div>
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Draft Contracts</h3>
-              <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400">5</p>
-            </div>
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Expired Contracts</h3>
-              <p className="text-2xl font-semibold text-red-600 dark:text-red-400">2</p>
-            </div>
-          </div>
-
-          <ContractLifecycle />
-        </motion.div>
+          ))}
+        </div>
       </div>
     </DashboardLayout>
   )

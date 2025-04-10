@@ -11,6 +11,10 @@ interface User {
   address: string
   roles: Role[]
   isAuthenticated: boolean
+  role: string
+  user_metadata?: {
+    email?: string
+  }
 }
 
 interface AuthContextType {
@@ -32,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkIfWalletIsConnected = async () => {
     try {
       if (typeof window !== 'undefined' && window.ethereum) {
-        const provider = new ethers.providers.Web3Provider(window.ethereum)
+        const provider = new ethers.BrowserProvider(window.ethereum)
         const accounts = await provider.listAccounts()
         
         if (accounts.length > 0) {
@@ -42,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             address,
             roles: ['DEFAULT_ADMIN'],
             isAuthenticated: true,
+            role: 'DEFAULT_ADMIN',
           })
           setIsAuthenticated(true)
         }
@@ -56,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsConnecting(true)
       
       if (typeof window !== 'undefined' && window.ethereum) {
-        const provider = new ethers.providers.Web3Provider(window.ethereum)
+        const provider = new ethers.BrowserProvider(window.ethereum)
         const accounts = await provider.send('eth_requestAccounts', [])
         
         if (accounts.length > 0) {
@@ -66,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             address,
             roles: ['DEFAULT_ADMIN'],
             isAuthenticated: true,
+            role: 'DEFAULT_ADMIN',
           })
           setIsAuthenticated(true)
           toast.success('Wallet connected successfully')
@@ -110,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           address: newAddress,
           roles,
           isAuthenticated: true,
+          role: 'DEFAULT_ADMIN',
         })
         setIsAuthenticated(true)
         toast('Account changed')

@@ -16,7 +16,6 @@ import {
   DocumentTextIcon
 } from '@heroicons/react/24/outline'
 import { useAuth } from '@/contexts/AuthContext'
-import { useTheme } from '@/contexts/ThemeContext'
 
 interface User {
   id: string
@@ -105,7 +104,6 @@ const statusColors = {
 
 export default function UserManagement() {
   const { user } = useAuth()
-  const { theme } = useTheme()
   const [users, setUsers] = useState<User[]>(dummyUsers)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'users' | 'claims'>('users')
