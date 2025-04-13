@@ -1,84 +1,17 @@
 'use client'
-
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
 import {
   CurrencyDollarIcon,
-  UserGroupIcon,
-  ShieldCheckIcon,
-  ArrowTrendingUpIcon,
-  ClockIcon,
-  ArrowPathIcon,
-  BanknotesIcon,
-  UserIcon
+  ArrowsRightLeftIcon,
+  TagIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline'
 import { useAuth } from '@/contexts/AuthContext'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 
-
-// Dummy data
-const dummyStats = {
-  totalSupply: '1,000,000 SPHR',
-  activeUsers: '2,543',
-  securityStatus: 'Active',
-  priceChange: '+2.5%',
-  lastUpdate: '2 minutes ago',
-  marketCap: '$25.4M',
-  volume24h: '$1.2M',
-  holders: '1,892',
-  transactions: '4,231'
-}
-
-const recentActivity = [
-  {
-    id: 1,
-    type: 'Token Transfer',
-    time: '2 hours ago',
-    amount: '+1,000 SPHR',
-    status: 'Completed',
-    icon: BanknotesIcon,
-    from: '0x1234...5678',
-    to: '0x8765...4321'
-  },
-  {
-    id: 2,
-    type: 'Exchange Rate Update',
-    time: '4 hours ago',
-    amount: '0.85 → 0.87',
-    status: 'Completed',
-    icon: ArrowPathIcon,
-    from: 'System',
-    to: 'Market'
-  },
-  {
-    id: 3,
-    type: 'New User Registration',
-    time: '6 hours ago',
-    amount: 'ID #28491',
-    status: 'Verified',
-    icon: UserIcon,
-    from: 'Registration',
-    to: 'System'
-  },
-  {
-    id: 4,
-    type: 'Contract Update',
-    time: '8 hours ago',
-    amount: 'v2.1.0',
-    status: 'Deployed',
-    icon: ShieldCheckIcon,
-    from: 'Development',
-    to: 'Mainnet'
-  }
-]
-
-const fetchDummyData = async () => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  return dummyStats
-}
+const API_BASE = 'https://rewardsvault-production.up.railway.app'
 
 const fadeIn = {
   initial: { opacity: 0, y: 10 },
@@ -86,14 +19,35 @@ const fadeIn = {
   exit: { opacity: 0, y: -10 }
 }
 
+interface TokenInfo {
+  totalSupply: string
+  isTransferable: boolean
+  symbol: string
+  name: string
+}
+
+const parseResponse = async (res: Response, key?: string) => {
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+  const data = await res.json()
+  
+  if (data.data && typeof data.data === 'object') {
+    return key ? data.data[key] : data.data
+  }
+  
+  return key ? data[key] : data
+}
+
 export default function Dashboard() {
+  const [tokenInfo, setTokenInfo] = useState<TokenInfo>({
+    totalSupply: 'Loading...',
+    isTransferable: false,
+    symbol: 'SPHR',
+    name: 'Loading...'
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { user } = useAuth()
   const router = useRouter()
-  
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ['dashboardStats'],
-    queryFn: fetchDummyData
-  })
 
   useEffect(() => {
     if (!user?.isAuthenticated) {
@@ -101,24 +55,72 @@ export default function Dashboard() {
     }
   }, [user, router])
 
-  if (!user?.isAuthenticated) {
-    return null
+  useEffect(() => {
+    const fetchTokenData = async () => {
+      try {
+        // Fixed API URLs - removed typos and extra parenthesis
+        const [supplyRes, transferableRes, symbolRes, nameRes] = await Promise.all([
+          fetch(`${API_BASE}/api/sphr/totalSupply`),
+          fetch(`${API_BASE}/api/sphr/transferable`),
+          fetch(`${API_BASE}/api/sphr/symbol`), // Fixed 'symbo' to 'symbol'
+          fetch(`${API_BASE}/api/sphr/name`)
+        ])
+
+        // Use mock data if any of the API calls fail
+        const mockData = {
+          totalSupply: '1000000000',
+          isTransferable: true,
+          symbol: 'SPHR',
+          name: 'Sphere Token'
+        }
+
+        try {
+          const totalSupply = await parseResponse(supplyRes, 'totalSupply')
+          const isTransferable = await parseResponse(transferableRes, 'isTransferable')
+          const symbol = await parseResponse(symbolRes, 'symbol')
+          const name = await parseResponse(nameRes, 'name')
+
+          setTokenInfo({
+            totalSupply: totalSupply || mockData.totalSupply,
+            isTransferable: isTransferable !== undefined ? isTransferable : mockData.isTransferable,
+            symbol: symbol || mockData.symbol,
+            name: name || mockData.name
+          })
+        } catch (parseError) {
+          console.warn('Error parsing API responses:', parseError)
+          setTokenInfo(mockData)
+          setError('Could not parse API responses. Using mock data.')
+        }
+      } catch (error) {
+        console.error('Error fetching token data:', error)
+        // Fallback to mock data on error
+        setTokenInfo({
+          totalSupply: '1000000000',
+          isTransferable: true,
+          symbol: 'SPHR',
+          name: 'Sphere Token'
+        })
+        setError('Failed to fetch token data. Using mock data.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTokenData()
+  }, [])
+
+  if (!user?.isAuthenticated) return null
+
+  const formatSupply = (supply: string) => {
+    const numericValue = parseFloat(supply)
+    return isNaN(numericValue) ? supply : 
+      numericValue.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' SPHR'
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A0A0A] via-[#111827] to-[#0A0A0A] relative overflow-hidden">
-      {/* Background elements */}
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-[0.03]"></div>
-      
-      {/* Animated lines */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-r from-transparent via-blue-600/20 to-transparent animate-[spin_20s_linear_infinite]"></div>
-        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-r from-transparent via-indigo-600/20 to-transparent animate-[spin_15s_linear_infinite]"></div>
-      </div>
-
       <DashboardLayout>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
           <motion.div 
             className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8"
             variants={fadeIn}
@@ -126,126 +128,90 @@ export default function Dashboard() {
             animate="animate"
           >
             <div className="mb-4 sm:mb-0">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent tracking-tight">Dashboard</h1>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent tracking-tight">
+                {tokenInfo.name} Dashboard
+              </h1>
               <p className="mt-2 text-sm text-blue-200">
-                {user.address.slice(0, 6)}...{user.address.slice(-4)} • Last updated: {stats?.lastUpdate || 'loading...'}
+                {user.address ? `${user.address.slice(0, 6)}...${user.address.slice(-4)}` : 'No address available'}
               </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-blue-200 flex items-center">
-                <ClockIcon className="h-4 w-4 mr-1.5 text-blue-400" />
-                Auto-refreshes every 30s
-              </div>
-              <div className="h-8 w-px bg-blue-800/50"></div>
-              <div className="text-sm text-blue-200">
-                Network: <span className="font-medium text-blue-400">Mainnet</span>
-              </div>
             </div>
           </motion.div>
 
-          {/* Stats Grid */}
+          {error && (
+            <motion.div
+              className="mb-6 p-4 bg-red-900/20 border border-red-800/30 rounded-xl text-red-200 text-sm"
+              variants={fadeIn}
+              initial="initial"
+              animate="animate"
+            >
+              <p>{error}</p>
+            </motion.div>
+          )}
+
           <motion.div 
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
             variants={fadeIn}
             initial="initial"
             animate="animate"
           >
-            {isLoading ? (
-              // Loading skeleton
-              Array(4).fill(0).map((_, i) => (
-                <div key={i} className="h-32 bg-blue-900/20 rounded-xl border border-blue-800/30 shadow-lg animate-pulse"></div>
-              ))
-            ) : (
-              <>
-                <div className="bg-blue-900/20 rounded-xl border border-blue-800/30 shadow-lg hover:shadow-xl transition-all duration-200 p-6 group hover:border-blue-500/50 backdrop-blur-xl">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-gradient-to-br from-blue-500/30 to-blue-600/30 rounded-xl group-hover:from-blue-500/40 group-hover:to-blue-600/40 transition-colors duration-200">
-                      <CurrencyDollarIcon className="h-6 w-6 text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-blue-200">Total Supply</p>
-                      <p className="text-2xl font-bold text-white mt-1">{stats?.totalSupply}</p>
-                      <p className="text-xs text-blue-300 mt-1">Market Cap: {stats?.marketCap}</p>
-                    </div>
-                  </div>
+            {/* Total Supply Card */}
+            <div className="bg-blue-900/20 rounded-xl border border-blue-800/30 shadow-lg backdrop-blur-xl p-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-blue-500/30 rounded-xl">
+                  <CurrencyDollarIcon className="h-6 w-6 text-blue-400" />
                 </div>
-
-                <div className="bg-indigo-900/20 rounded-xl border border-indigo-800/30 shadow-lg hover:shadow-xl transition-all duration-200 p-6 group hover:border-indigo-500/50 backdrop-blur-xl">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-gradient-to-br from-indigo-500/30 to-indigo-600/30 rounded-xl group-hover:from-indigo-500/40 group-hover:to-indigo-600/40 transition-colors duration-200">
-                      <UserGroupIcon className="h-6 w-6 text-indigo-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-indigo-200">Active Users</p>
-                      <p className="text-2xl font-bold text-white mt-1">{stats?.activeUsers}</p>
-                      <p className="text-xs text-indigo-300 mt-1">Total Holders: {stats?.holders}</p>
-                    </div>
-                  </div>
+                <div>
+                  <p className="text-sm text-blue-200">Total Supply</p>
+                  <p className="text-2xl font-bold text-white mt-1">
+                    {loading ? 'Loading...' : formatSupply(tokenInfo.totalSupply)}
+                  </p>
                 </div>
-
-                <div className="bg-emerald-900/20 rounded-xl border border-emerald-800/30 shadow-lg hover:shadow-xl transition-all duration-200 p-6 group hover:border-emerald-500/50 backdrop-blur-xl">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-gradient-to-br from-emerald-500/30 to-emerald-600/30 rounded-xl group-hover:from-emerald-500/40 group-hover:to-emerald-600/40 transition-colors duration-200">
-                      <ShieldCheckIcon className="h-6 w-6 text-emerald-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-emerald-200">Security Status</p>
-                      <p className="text-2xl font-bold text-white mt-1">{stats?.securityStatus}</p>
-                      <p className="text-xs text-emerald-300 mt-1">24h Transactions: {stats?.transactions}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-purple-900/20 rounded-xl border border-purple-800/30 shadow-lg hover:shadow-xl transition-all duration-200 p-6 group hover:border-purple-500/50 backdrop-blur-xl">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-gradient-to-br from-purple-500/30 to-purple-600/30 rounded-xl group-hover:from-purple-500/40 group-hover:to-purple-600/40 transition-colors duration-200">
-                      <ArrowTrendingUpIcon className="h-6 w-6 text-purple-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-purple-200">Price Change</p>
-                      <p className="text-2xl font-bold text-white mt-1">{stats?.priceChange}</p>
-                      <p className="text-xs text-purple-300 mt-1">24h Volume: {stats?.volume24h}</p>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </motion.div>
-
-          {/* Recent Activity */}
-          <motion.div 
-            className="bg-blue-900/20 rounded-xl border border-blue-800/30 shadow-lg backdrop-blur-xl"
-            variants={fadeIn}
-            initial="initial"
-            animate="animate"
-            transition={{ delay: 0.2 }}
-          >
-            <div className="px-6 py-4 border-b border-blue-800/30">
-              <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
+              </div>
             </div>
-            <div className="divide-y divide-blue-800/30">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="px-6 py-4 hover:bg-blue-800/20 transition-colors duration-150">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-2 bg-blue-800/30 rounded-lg">
-                        <activity.icon className="h-5 w-5 text-blue-300" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-white">{activity.type}</p>
-                        <p className="text-xs text-blue-200 mt-0.5">{activity.time}</p>
-                        <p className="text-xs text-blue-300 mt-1">
-                          From: {activity.from} → To: {activity.to}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-white">{activity.amount}</p>
-                      <p className="text-xs text-blue-200 mt-0.5">{activity.status}</p>
-                    </div>
-                  </div>
+
+            {/* Transfer Status Card */}
+            <div className="bg-emerald-900/20 rounded-xl border border-emerald-800/30 shadow-lg backdrop-blur-xl p-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-emerald-500/30 rounded-xl">
+                  <ArrowsRightLeftIcon className="h-6 w-6 text-emerald-400" />
                 </div>
-              ))}
+                <div>
+                  <p className="text-sm text-emerald-200">Transfers</p>
+                  <p className="text-2xl font-bold text-white mt-1">
+                    {loading ? 'Loading...' : tokenInfo.isTransferable ? 'Active' : 'Locked'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Symbol Card */}
+            <div className="bg-purple-900/20 rounded-xl border border-purple-800/30 shadow-lg backdrop-blur-xl p-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-purple-500/30 rounded-xl">
+                  <TagIcon className="h-6 w-6 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-purple-200">Symbol</p>
+                  <p className="text-2xl font-bold text-white mt-1">
+                    {loading ? 'Loading...' : tokenInfo.symbol}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Name Card */}
+            <div className="bg-indigo-900/20 rounded-xl border border-indigo-800/30 shadow-lg backdrop-blur-xl p-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-indigo-500/30 rounded-xl">
+                  <DocumentTextIcon className="h-6 w-6 text-indigo-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-indigo-200">Token Name</p>
+                  <p className="text-2xl font-bold text-white mt-1">
+                    {loading ? 'Loading...' : tokenInfo.name}
+                  </p>
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>

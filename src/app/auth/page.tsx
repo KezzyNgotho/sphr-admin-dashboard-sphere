@@ -1,19 +1,42 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ShieldCheckIcon } from '@heroicons/react/24/outline'
 
+// Define types for Auth context
+interface AuthContextType {
+  connectWallet: () => Promise<void>
+  isConnecting: boolean
+  isAuthenticated: boolean
+  error?: string
+}
+
 export default function AuthPage() {
-  const { connectWallet, isConnecting } = useAuth()
+  const { connectWallet, isConnecting, error: authError } = useAuth() as unknown as AuthContextType
   const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [localError, setLocalError] = useState<string>('')
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Handle hydration mismatch
+  useEffect(() => {
+    setIsMounted(true)
+    return () => setIsMounted(false)
+  }, [])
+
+  const handleConnect = async () => {
+    try {
+      setLocalError('')
+      await connectWallet()
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : 'Failed to connect wallet')
+    }
+  }
+
+  if (!isMounted) return null
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
@@ -36,10 +59,22 @@ export default function AuthPage() {
             <p className="text-center text-gray-600 mb-8">
               Connect your wallet to access the dashboard
             </p>
+            
+            {/* Error Message */}
+            {(authError || localError) && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg"
+              >
+                {authError || localError}
+              </motion.div>
+            )}
+
             <button
-              onClick={connectWallet}
+              onClick={handleConnect}
               disabled={isConnecting}
-              className={`w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed`}
+              className={`w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
             >
               {isConnecting ? (
                 <motion.div
@@ -51,6 +86,7 @@ export default function AuthPage() {
                 'Connect Wallet'
               )}
             </button>
+
             <p className="mt-4 text-center text-sm text-gray-600">
               Please make sure you have MetaMask installed
             </p>
@@ -59,4 +95,4 @@ export default function AuthPage() {
       </motion.div>
     </div>
   )
-} 
+}
