@@ -45,110 +45,112 @@ export default function TokenPage() {
   useEffect(() => {
     const fetchTokenData = async () => {
       try {
-        // Fetch token address
-        const addressRes = await fetch(`${API_BASE}/api/exchange/token-address/sphr`);
-        let addressData;
-        if (addressRes.ok) {
-          addressData = await addressRes.json();
-        }
-        
-        // Fetch decay factor
-        const decayRes = await fetch(`${API_BASE}/api/exchange/decay-factor`);
-        let decayData;
-        if (decayRes.ok) {
-          decayData = await decayRes.json();
-        }
-        
-        // Fetch precision
-        const precisionRes = await fetch(`${API_BASE}/api/exchange/precision`);
-        let precisionData;
-        if (precisionRes.ok) {
-          precisionData = await precisionRes.json();
-        }
-        
-        // Fetch SPHR reserve
-        const sphrRes = await fetch(`${API_BASE}/api/exchange/reserve/sphr`);
-        let sphrData;
-        if (sphrRes.ok) {
-          sphrData = await sphrRes.json();
-        }
-        
-        // Fetch WBERA reserve
-        const wberaRes = await fetch(`${API_BASE}/api/exchange/reserve/wbera`);
-        let wberaData;
-        if (wberaRes.ok) {
-          wberaData = await wberaRes.json();
-        }
-        
-        // Fetch decaying rewards status
-        const decayingRes = await fetch(`${API_BASE}/api/exchange/uses-decay`);
-        let decayingData;
-        if (decayingRes.ok) {
-          decayingData = await decayingRes.json();
-        }
+        // Define API endpoints
+        const endpoints = [
+          { name: 'address', url: `${API_BASE}/api/exchange/token-address/sphr` },
+          { name: 'decay', url: `${API_BASE}/api/exchange/decay-factor` },
+          { name: 'precision', url: `${API_BASE}/api/exchange/precision` },
+          { name: 'sphrReserve', url: `${API_BASE}/api/exchange/reserve/sphr` },
+          { name: 'wberaReserve', url: `${API_BASE}/api/exchange/reserve/wbera` },
+          { name: 'decayingRewards', url: `${API_BASE}/api/exchange/uses-decay` }
+        ];
 
-        // Extract token address - based on actual API response structure
-        let tokenAddress = '0x000...0000';
-        if (addressData?.status === 'success' && addressData?.data?.sphrTokenAddress) {
-          tokenAddress = addressData.data.sphrTokenAddress;
-        }
-        
-        // Extract decay factor - based on actual API response structure
-        let reserveDecayFactor = 0;
-        if (decayData?.status === 'success' && decayData?.data?.decayFactor) {
-          reserveDecayFactor = parseFloat(decayData.data.decayFactor) / 100; // Convert to decimal
-        }
-        
-        // Extract precision - based on actual API response structure
-        let precision = 18;
-        if (precisionData?.status === 'success' && precisionData?.data?.precision) {
-          // The API returns the actual precision value (e.g., 1000000000000000000)
-          // We need to convert it to the exponent (e.g., 18)
-          const precisionValue = precisionData.data.precision;
-          precision = Math.log10(parseFloat(precisionValue));
-          if (isNaN(precision)) {
-            precision = 18; // Default to 18 if conversion fails
+        // Create an object to store the results
+        const results: Record<string, any> = {};
+        let hasErrors = false;
+
+        // Fetch each endpoint individually with proper error handling
+        for (const endpoint of endpoints) {
+          try {
+            console.log(`Fetching ${endpoint.name} from ${endpoint.url}`);
+            const response = await fetch(endpoint.url);
+            
+            // Check if response is OK
+            if (!response.ok) {
+              console.error(`Error fetching ${endpoint.name}: HTTP ${response.status}`);
+              hasErrors = true;
+              continue;
+            }
+            
+            // Check content type to ensure it's JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+              // If not JSON, log the first part of the response to see what's coming back
+              const text = await response.text();
+              console.error(`Non-JSON response for ${endpoint.name}:`, text.substring(0, 100) + '...');
+              hasErrors = true;
+              continue;
+            }
+            
+            // Parse JSON response
+            const data = await response.json();
+            console.log(`${endpoint.name} data:`, data);
+            results[endpoint.name] = data;
+          } catch (error) {
+            console.error(`Error processing ${endpoint.name}:`, error);
+            hasErrors = true;
           }
         }
-        
-        // Extract SPHR reserve - based on actual API response structure
-        let sphrReserve = '0';
-        if (sphrData?.status === 'success' && sphrData?.data?.sphrReserve) {
-          sphrReserve = sphrData.data.sphrReserve;
+
+        // Process the results to build the metrics object
+        const metricsData: TokenMetrics = {
+          tokenAddress: '0x000...0000',
+          reserveDecayFactor: 0,
+          precision: 18,
+          sphrReserve: '0',
+          wberaReserve: '0',
+          usesDecayingRewards: true
+        };
+
+        // Extract token address
+        if (results.address?.status === 'success' && results.address?.data?.sphrTokenAddress) {
+          metricsData.tokenAddress = results.address.data.sphrTokenAddress;
         }
-        
-        // Extract WBERA reserve - based on actual API response structure
-        let wberaReserve = '0';
-        if (wberaData?.status === 'success' && wberaData?.data?.wberaReserve) {
-          wberaReserve = wberaData.data.wberaReserve;
+
+        // Extract decay factor
+        if (results.decay?.status === 'success' && results.decay?.data?.decayFactor) {
+          metricsData.reserveDecayFactor = parseFloat(results.decay.data.decayFactor) / 100; // Convert to decimal
         }
-        
-        // Extract decaying rewards status - based on actual API response structure
-        let usesDecayingRewards = true;
-        if (decayingData?.status === 'success' && decayingData?.data?.usesDecayingRewards !== undefined) {
-          usesDecayingRewards = Boolean(decayingData.data.usesDecayingRewards);
+
+        // Extract precision
+        if (results.precision?.status === 'success' && results.precision?.data?.precision) {
+          // The API returns the actual precision value (e.g., 1000000000000000000)
+          // We need to convert it to the exponent (e.g., 18)
+          const precisionValue = results.precision.data.precision;
+          const precision = Math.log10(parseFloat(precisionValue));
+          if (!isNaN(precision)) {
+            metricsData.precision = precision;
+          }
+        }
+
+        // Extract SPHR reserve
+        if (results.sphrReserve?.status === 'success' && results.sphrReserve?.data?.sphrReserve) {
+          metricsData.sphrReserve = results.sphrReserve.data.sphrReserve;
+        }
+
+        // Extract WBERA reserve
+        if (results.wberaReserve?.status === 'success' && results.wberaReserve?.data?.wberaReserve) {
+          metricsData.wberaReserve = results.wberaReserve.data.wberaReserve;
+        }
+
+        // Extract decaying rewards status
+        if (results.decayingRewards?.status === 'success' && results.decayingRewards?.data?.usesDecayingRewards !== undefined) {
+          metricsData.usesDecayingRewards = Boolean(results.decayingRewards.data.usesDecayingRewards);
         }
 
         // Update state with the extracted values
-        setMetrics({
-          tokenAddress,
-          reserveDecayFactor,
-          precision,
-          sphrReserve,
-          wberaReserve,
-          usesDecayingRewards
-        });
+        setMetrics(metricsData);
         
         // Check if we're using any default values
         const usingDefaults = 
-          tokenAddress === '0x000...0000' || 
-          reserveDecayFactor === 0 || 
-          sphrReserve === '0' || 
-          wberaReserve === '0';
-          
-        setUsingMockData(usingDefaults);
+          metricsData.tokenAddress === '0x000...0000' ||
+          metricsData.reserveDecayFactor === 0 ||
+          metricsData.sphrReserve === '0' ||
+          metricsData.wberaReserve === '0';
         
-        if (usingDefaults) {
+        setUsingMockData(usingDefaults || hasErrors);
+        
+        if (usingDefaults || hasErrors) {
           setError('Some data could not be retrieved from API. Showing partial default values.');
         }
         
@@ -178,8 +180,18 @@ export default function TokenPage() {
         }
       );
       
+      // Check if response is OK
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
+      }
+      
+      // Check content type to ensure it's JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        // If not JSON, throw an error
+        const text = await response.text();
+        console.error('Non-JSON response for calculation:', text.substring(0, 100) + '...');
+        throw new Error('Invalid response format');
       }
       
       const data = await response.json();
@@ -346,10 +358,11 @@ export default function TokenPage() {
               </div>
             </div>
           </Card>
+
           <Card title="SPHR Reserve" icon={CurrencyDollarIcon} color="emerald">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-xl font-bold text-white">
                   {formatReserve(metrics.sphrReserve)}
                 </p>
                 <p className="text-xs text-emerald-400 mt-1">Current reserve balance</p>
@@ -451,3 +464,4 @@ export default function TokenPage() {
     </DashboardLayout>
   );
 }
+

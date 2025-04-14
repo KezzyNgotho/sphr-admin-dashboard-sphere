@@ -29,7 +29,7 @@ const navigation = [
   { name: 'Exchange', href: '/exchange', icon: ArrowsRightLeftIcon },
   { name: 'Roles', href: '/roles', icon: UserGroupIcon },
   { name: 'Contract Lifecycle', href: '/contracts', icon: DocumentTextIcon },
-  { name: 'User Management', href: '/users', icon: UserCircleIcon },
+ // { name: 'User Management', href: '/users', icon: UserCircleIcon },
   { name: 'Security', href: '/security', icon: ShieldCheckIcon },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ]
