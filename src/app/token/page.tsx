@@ -1,4 +1,5 @@
 'use client'
+
 import { useState, useEffect } from 'react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import Card from '@/components/ui/Card'
@@ -12,15 +13,19 @@ import {
   ArrowPathIcon,
   ChartBarIcon,
   InformationCircleIcon,
-  ExclamationCircleIcon
+  ExclamationCircleIcon,
+  ArrowDownTrayIcon, 
+  BanknotesIcon, 
+  ArrowsRightLeftIcon
 } from '@heroicons/react/24/outline';
 
 interface TokenMetrics {
-  tokenAddress: string
+  sphrTokenAddress: string
+  usdcTokenAddress: string
   reserveDecayFactor: number
   precision: number
   sphrReserve: string
-  wberaReserve: string
+  usdcReserve: string
   usesDecayingRewards: boolean
 }
 
@@ -28,11 +33,12 @@ const API_BASE = 'https://rewardsvault-production.up.railway.app'
 
 export default function TokenPage() {
   const [metrics, setMetrics] = useState<TokenMetrics>({
-    tokenAddress: '0x000...0000',
+    sphrTokenAddress: '0x000...0000',
+    usdcTokenAddress: '0x000...0000',
     reserveDecayFactor: 0,
     precision: 18,
     sphrReserve: '0',
-    wberaReserve: '0',
+    usdcReserve: '0',
     usesDecayingRewards: true
   })
   
@@ -41,17 +47,30 @@ export default function TokenPage() {
   const [calculationLoading, setCalculationLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [usingMockData, setUsingMockData] = useState(false)
+  
+  // Add new state variables
+  const [withdrawAmount, setWithdrawAmount] = useState('')
+  const [withdrawToken, setWithdrawToken] = useState('')
+  const [newMinRate, setNewMinRate] = useState('')
+  const [newRewardPool, setNewRewardPool] = useState('')
+  const [txStatus, setTxStatus] = useState<{ [key: string]: string }>({})
+  const [isProcessing, setIsProcessing] = useState({
+    withdraw: false,
+    updateRate: false,
+    updatePool: false
+  })
 
   useEffect(() => {
     const fetchTokenData = async () => {
       try {
         // Define API endpoints
         const endpoints = [
-          { name: 'address', url: `${API_BASE}/api/exchange/token-address/sphr` },
+          { name: 'sphrAddress', url: `${API_BASE}/api/exchange/token-address/sphr` },
+          { name: 'usdcAddress', url: `${API_BASE}/api/exchange/token-address/usdc` },
           { name: 'decay', url: `${API_BASE}/api/exchange/decay-factor` },
           { name: 'precision', url: `${API_BASE}/api/exchange/precision` },
           { name: 'sphrReserve', url: `${API_BASE}/api/exchange/reserve/sphr` },
-          { name: 'wberaReserve', url: `${API_BASE}/api/exchange/reserve/wbera` },
+          { name: 'usdcReserve', url: `${API_BASE}/api/exchange/reserve/usdc` },
           { name: 'decayingRewards', url: `${API_BASE}/api/exchange/uses-decay` }
         ];
 
@@ -94,17 +113,23 @@ export default function TokenPage() {
 
         // Process the results to build the metrics object
         const metricsData: TokenMetrics = {
-          tokenAddress: '0x000...0000',
+          sphrTokenAddress: '0x000...0000',
+          usdcTokenAddress: '0x000...0000',
           reserveDecayFactor: 0,
           precision: 18,
           sphrReserve: '0',
-          wberaReserve: '0',
+          usdcReserve: '0',
           usesDecayingRewards: true
         };
 
-        // Extract token address
-        if (results.address?.status === 'success' && results.address?.data?.sphrTokenAddress) {
-          metricsData.tokenAddress = results.address.data.sphrTokenAddress;
+        // Extract SPHR token address
+        if (results.sphrAddress?.status === 'success' && results.sphrAddress?.data?.sphrTokenAddress) {
+          metricsData.sphrTokenAddress = results.sphrAddress.data.sphrTokenAddress;
+        }
+
+        // Extract USDC token address
+        if (results.usdcAddress?.status === 'success' && results.usdcAddress?.data?.usdcTokenAddress) {
+          metricsData.usdcTokenAddress = results.usdcAddress.data.usdcTokenAddress;
         }
 
         // Extract decay factor
@@ -128,9 +153,9 @@ export default function TokenPage() {
           metricsData.sphrReserve = results.sphrReserve.data.sphrReserve;
         }
 
-        // Extract WBERA reserve
-        if (results.wberaReserve?.status === 'success' && results.wberaReserve?.data?.wberaReserve) {
-          metricsData.wberaReserve = results.wberaReserve.data.wberaReserve;
+        // Extract USDC reserve
+        if (results.usdcReserve?.status === 'success' && results.usdcReserve?.data?.usdcReserve) {
+          metricsData.usdcReserve = results.usdcReserve.data.usdcReserve;
         }
 
         // Extract decaying rewards status
@@ -143,17 +168,18 @@ export default function TokenPage() {
         
         // Check if we're using any default values
         const usingDefaults = 
-          metricsData.tokenAddress === '0x000...0000' ||
+          metricsData.sphrTokenAddress === '0x000...0000' ||
+          metricsData.usdcTokenAddress === '0x000...0000' ||
           metricsData.reserveDecayFactor === 0 ||
           metricsData.sphrReserve === '0' ||
-          metricsData.wberaReserve === '0';
+          metricsData.usdcReserve === '0';
         
         setUsingMockData(usingDefaults || hasErrors);
         
         if (usingDefaults || hasErrors) {
           setError('Some data could not be retrieved from API. Showing partial default values.');
         }
-        
+      
       } catch (error) {
         console.error('Error fetching token data:', error);
         setError('Failed to fetch token metrics. Using default values.');
@@ -197,8 +223,8 @@ export default function TokenPage() {
       const data = await response.json();
       
       // Based on the actual API response structure
-      if (data?.status === 'success' && data?.data?.calculatedWberaReward) {
-        setDecayingRewardsResult(data.data.calculatedWberaReward);
+      if (data?.status === 'success' && data?.data?.calculatedUsdcReward) {
+        setDecayingRewardsResult(data.data.calculatedUsdcReward);
       } else {
         throw new Error('Invalid response format');
       }
@@ -206,8 +232,8 @@ export default function TokenPage() {
       console.error('Calculation Error:', error);
       // Generate a realistic fallback value based on current metrics
       const sphrValue = parseFloat(metrics.sphrReserve) || 1000000;
-      const wberaValue = parseFloat(metrics.wberaReserve) || 100000;
-      const ratio = sphrValue / wberaValue;
+      const usdcValue = parseFloat(metrics.usdcReserve) || 100000;
+      const ratio = sphrValue / usdcValue;
       
       // Simple calculation: 100 SPHR / current ratio
       const mockReward = (100 / ratio).toFixed(2);
@@ -246,13 +272,13 @@ export default function TokenPage() {
   const calculateReserveRatio = () => {
     try {
       const sphrValue = parseFloat(metrics.sphrReserve);
-      const wberaValue = parseFloat(metrics.wberaReserve);
+      const usdcValue = parseFloat(metrics.usdcReserve);
       
-      if (isNaN(sphrValue) || isNaN(wberaValue) || wberaValue === 0) {
+      if (isNaN(sphrValue) || isNaN(usdcValue) || usdcValue === 0) {
         return 'N/A';
       }
       
-      return (sphrValue / wberaValue).toFixed(2);
+      return (sphrValue / usdcValue).toFixed(2);
     } catch (e) {
       return 'N/A';
     }
@@ -271,6 +297,189 @@ export default function TokenPage() {
       return '0.00%';
     }
   };
+
+  // Add these handler functions
+  
+  const handleWithdraw = async () => {
+    setIsProcessing(prev => ({...prev, withdraw: true}))
+    setTxStatus({})
+    
+    // Validate inputs before sending
+    if (!withdrawAmount || isNaN(parseFloat(withdrawAmount)) || parseFloat(withdrawAmount) <= 0) {
+      setTxStatus({ withdraw: 'Please enter a valid amount greater than 0' })
+      setIsProcessing(prev => ({...prev, withdraw: false}))
+      return
+    }
+    
+    if (!withdrawToken || !withdrawToken.trim().startsWith('0x')) {
+      setTxStatus({ withdraw: 'Please enter a valid token address (starting with 0x)' })
+      setIsProcessing(prev => ({...prev, withdraw: false}))
+      return
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/exchange/admin/withdraw-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: parseFloat(withdrawAmount),
+          tokenAddress: withdrawToken.trim()
+        })
+      })
+      
+      // For 400 errors, try to get the validation error message
+      if (response.status === 400) {
+        const contentType = response.headers.get('content-type')
+        
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json()
+          throw new Error(errorData.message || 'Invalid input: The server rejected the request')
+        } else {
+          throw new Error('Invalid input: The server rejected the request')
+        }
+      }
+      
+      // For other non-OK responses
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`)
+      }
+      
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type')
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned non-JSON response')
+      }
+      
+      const data = await response.json()
+      setTxStatus({ withdraw: 'Withdrawal successful!' })
+      setWithdrawAmount('')
+      setWithdrawToken('')
+    } catch (error) {
+      console.error('Withdrawal error:', error)
+      setTxStatus({ withdraw: error instanceof Error ? error.message : 'Unknown error' })
+    } finally {
+      setIsProcessing(prev => ({...prev, withdraw: false}))
+    }
+  }
+  
+  const handleUpdateRewardPool = async () => {
+    setIsProcessing(prev => ({...prev, updatePool: true}))
+    setTxStatus({})
+    
+    // Validate input before sending
+    if (!newRewardPool || !newRewardPool.trim().startsWith('0x')) {
+      setTxStatus({ rewardPool: 'Please enter a valid pool address (starting with 0x)' })
+      setIsProcessing(prev => ({...prev, updatePool: false}))
+      return
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/exchange/admin/update-reward-pool`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          newPool: newRewardPool.trim()
+        })
+      })
+      
+      // For 400 errors, try to get the validation error message
+      if (response.status === 400) {
+        const contentType = response.headers.get('content-type')
+        
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json()
+          throw new Error(errorData.message || 'Invalid input: The server rejected the request')
+        } else {
+          throw new Error('Invalid input: The server rejected the request')
+        }
+      }
+      
+      // For other non-OK responses
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`)
+      }
+      
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type')
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned non-JSON response')
+      }
+      
+      const data = await response.json()
+      setTxStatus({ rewardPool: 'Reward pool updated!' })
+      setNewRewardPool('')
+    } catch (error) {
+      console.error('Update reward pool error:', error)
+      setTxStatus({ rewardPool: error instanceof Error ? error.message : 'Unknown error' })
+    } finally {
+      setIsProcessing(prev => ({...prev, updatePool: false}))
+    }
+  }
+
+  const handleUpdateMinRate = async () => {
+    setIsProcessing(prev => ({...prev, updateRate: true}))
+    setTxStatus({})
+    
+    // Validate input before sending
+    if (!newMinRate || isNaN(parseFloat(newMinRate))) {
+      setTxStatus({ minRate: 'Please enter a valid number for the minimum rate' })
+      setIsProcessing(prev => ({...prev, updateRate: false}))
+      return
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/exchange/admin/update-min-rate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          newRate: parseFloat(newMinRate) // Ensure it's a number, not a string
+        })
+      })
+      
+      // For 400 errors, try to get the validation error message
+      if (response.status === 400) {
+        const contentType = response.headers.get('content-type')
+        
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json()
+          throw new Error(errorData.message || 'Invalid input: The server rejected the request')
+        } else {
+          throw new Error('Invalid input: The server rejected the request')
+        }
+      }
+      
+      // For other non-OK responses
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`)
+      }
+      
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type')
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned non-JSON response')
+      }
+      
+      const data = await response.json()
+      setTxStatus({ minRate: 'Minimum rate updated successfully!' })
+      setNewMinRate('')
+    } catch (error) {
+      console.error('Update min rate error:', error)
+      setTxStatus({ minRate: error instanceof Error ? error.message : 'Unknown error' })
+    } finally {
+      setIsProcessing(prev => ({...prev, updateRate: false}))
+    }
+  }
+  
+  
 
   if (isLoading) {
     return (
@@ -291,7 +500,7 @@ export default function TokenPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
-              SPHR Token Metrics
+              SPHR Reserves Metrics
             </h1>
             <p className="mt-1 text-sm text-gray-400">
               Real-time token reserve analytics and parameters
@@ -304,7 +513,6 @@ export default function TokenPage() {
             </div>
           </div>
         </div>
-
         {error && (
           <div className="bg-amber-900/20 border border-amber-800/30 rounded-lg p-4 flex items-start space-x-3">
             <ExclamationCircleIcon className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
@@ -314,19 +522,33 @@ export default function TokenPage() {
             </div>
           </div>
         )}
-
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card title="Token Address" icon={TagIcon} color="blue">
+          <Card title="SPHR Token Address" icon={TagIcon} color="blue">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-mono text-gray-300 truncate w-48">
-                  {formatAddress(String(metrics.tokenAddress))}
+                  {formatAddress(String(metrics.sphrTokenAddress))}
                 </p>
-                <p className="text-xs text-blue-400 mt-1">ERC-20 Token</p>
+                <p className="text-xs text-blue-400 mt-1">SPHR ERC-20 Token</p>
               </div>
               <div className="p-3 bg-blue-900/20 rounded-lg backdrop-blur-sm">
-                <InformationCircleIcon className="h-6 w-6 text-blue-400" />
+                <TagIcon className="h-6 w-6 text-blue-400" />
+              </div>
+            </div>
+          </Card>
+          
+          <Card title="USDC Token Address" icon={TagIcon} color="blue">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-mono text-gray-300 truncate w-48">
+                  {formatAddress(String(metrics.usdcTokenAddress))}
+                </p>
+                <p className="text-xs text-green-400 mt-1">USDC ERC-20 Token</p>
+              </div>
+               
+              <div className="p-3 bg-green-900/20 rounded-lg backdrop-blur-sm">
+                <TagIcon className="h-6 w-6 text-green-400" />
               </div>
             </div>
           </Card>
@@ -358,11 +580,10 @@ export default function TokenPage() {
               </div>
             </div>
           </Card>
-
           <Card title="SPHR Reserve" icon={CurrencyDollarIcon} color="emerald">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xl font-bold text-white">
+                <p className="text-l font-bold text-white">
                   {formatReserve(metrics.sphrReserve)}
                 </p>
                 <p className="text-xs text-emerald-400 mt-1">Current reserve balance</p>
@@ -373,13 +594,13 @@ export default function TokenPage() {
             </div>
           </Card>
           
-          <Card title="WBERA Reserve" icon={CurrencyDollarIcon} color="amber">
+          <Card title="USDC Reserve" icon={CurrencyDollarIcon} color="amber">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-white">
-                  {formatReserve(metrics.wberaReserve)}
+                <p className="text-l font-bold text-white">
+                  {formatReserve(metrics.usdcReserve)}
                 </p>
-                <p className="text-xs text-amber-400 mt-1">Wrapped token reserve</p>
+                <p className="text-xs text-amber-400 mt-1">Stablecoin reserve</p>
               </div>
               <div className="p-3 bg-amber-900/20 rounded-lg backdrop-blur-sm">
                 <CurrencyDollarIcon className="h-6 w-6 text-amber-400" />
@@ -391,7 +612,7 @@ export default function TokenPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold text-white">
-                  {metrics.usesDecayingRewards ? 'Active' : 'Inactive'}
+                  {metrics.usesDecayingRewards ? 'True' : 'False'}
                 </p>
                 <p className="text-xs text-rose-400 mt-1">
                   {metrics.usesDecayingRewards ? 'Decaying rewards enabled' : 'Fixed rewards'}
@@ -403,9 +624,94 @@ export default function TokenPage() {
             </div>
           </Card>
         </div>
+        
+        {/* Admin Controls Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card title="Withdraw Tokens" icon={ArrowDownTrayIcon} color="rose">
+            <div className="space-y-4 mt-4">
+              <input
+                type="number"
+                placeholder="Amount"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+                className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Token Address"
+                value={withdrawToken}
+                onChange={(e) => setWithdrawToken(e.target.value)}
+                className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              />
+              <button
+                onClick={handleWithdraw}
+                disabled={isProcessing.withdraw}
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isProcessing.withdraw ? 'Processing...' : 'Withdraw'}
+              </button>
+              {txStatus.withdraw && (
+                <p className={`text-sm ${txStatus.withdraw.includes('success') ? 'text-green-400' : 'text-rose-400'}`}>
+                  {txStatus.withdraw}
+                </p>
+              )}
+            </div>
+          </Card>
+          
+          {/* Update Min Rate Card */}
+          <Card title="Update Minimum Rate" icon={ArrowsRightLeftIcon} color="amber">
+            <div className="space-y-4 mt-4">
+              <input
+                type="number"
+                step="0.0001"
+                placeholder="New Minimum Rate"
+                value={newMinRate}
+                onChange={(e) => setNewMinRate(e.target.value)}
+                className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              />
+              <button
+                onClick={handleUpdateMinRate}
+                disabled={isProcessing.updateRate}
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isProcessing.updateRate ? 'Updating...' : 'Update Rate'}
+              </button>
+              {txStatus.minRate && (
+                <p className={`text-sm ${txStatus.minRate.includes('updated') ? 'text-green-400' : 'text-amber-400'}`}>
+                  {txStatus.minRate}
+                </p>
+              )}
+            </div>
+          </Card>
+          
+          {/* Update Reward Pool Card */}
+          <Card title="Update Reward Pool" icon={BanknotesIcon} color="emerald">
+            <div className="space-y-4 mt-4">
+              <input
+                type="text"
+                placeholder="New Pool Address"
+                value={newRewardPool}
+                onChange={(e) => setNewRewardPool(e.target.value)}
+                className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              />
+              <button
+                onClick={handleUpdateRewardPool}
+                disabled={isProcessing.updatePool}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isProcessing.updatePool ? 'Updating...' : 'Update Pool'}
+              </button>
+              {txStatus.rewardPool && (
+                <p className={`text-sm ${txStatus.rewardPool.includes('updated') ? 'text-green-400' : 'text-emerald-400'}`}>
+                  {txStatus.rewardPool}
+                </p>
+              )}
+            </div>
+          </Card>
+        </div>
 
         {/* Decaying Rewards Calculation */}
-        <Card title="Decaying Rewards Calculator" icon={CalculatorIcon} color="cyan">
+        <Card title="Exchange Rate Calculator" icon={CalculatorIcon} color="cyan">
           <div className="mt-4 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
               <button
@@ -419,7 +725,7 @@ export default function TokenPage() {
               {decayingRewardsResult && (
                 <div className="p-4 bg-gray-800/50 rounded-lg flex items-center">
                   <span className="text-cyan-400 font-mono">
-                    {decayingRewardsResult} WBERA
+                    {decayingRewardsResult} USDC
                   </span>
                   {usingMockData && (
                     <span className="ml-2 text-xs text-amber-400">(simulated)</span>
@@ -434,34 +740,7 @@ export default function TokenPage() {
             </div>
           </div>
         </Card>
-
-        {/* Additional Information */}
-        <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
-          <h3 className="text-lg font-medium text-white mb-2">About SPHR Token Metrics</h3>
-          <p className="text-sm text-gray-400">
-            The SPHR token uses a decaying rewards mechanism to incentivize long-term holding.
-            The reserve decay factor determines how quickly rewards decrease over time, while
-            the precision value defines the decimal places used in calculations.
-          </p>
-          
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-800/50 p-3 rounded-lg">
-              <h4 className="text-sm font-medium text-white">Reserve Ratio</h4>
-              <p className="text-xs text-gray-400 mt-1">
-                SPHR to WBERA: {calculateReserveRatio()}
-              </p>
-            </div>
-            
-            <div className="bg-gray-800/50 p-3 rounded-lg">
-              <h4 className="text-sm font-medium text-white">Estimated APY</h4>
-              <p className="text-xs text-gray-400 mt-1">
-                {calculateEstimatedAPY()} (based on current decay factor)
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </DashboardLayout>
   );
 }
-

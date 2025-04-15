@@ -25,13 +25,10 @@ import { useAuth } from '@/contexts/AuthContext'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-  { name: 'Tokens', href: '/token', icon: CurrencyDollarIcon },
-  { name: 'Exchange', href: '/exchange', icon: ArrowsRightLeftIcon },
+  { name: ' Reserves', href: '/token', icon: CurrencyDollarIcon },
   { name: 'Roles', href: '/roles', icon: UserGroupIcon },
   { name: 'Contract Lifecycle', href: '/contracts', icon: DocumentTextIcon },
- // { name: 'User Management', href: '/users', icon: UserCircleIcon },
-  { name: 'Security', href: '/security', icon: ShieldCheckIcon },
-  { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
+ 
 ]
 
 interface DashboardLayoutProps {
