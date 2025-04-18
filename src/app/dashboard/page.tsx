@@ -27,21 +27,28 @@ interface TokenInfo {
 }
 
 const parseResponse = async (res: Response, key?: string) => {
-  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
-  const data = await res.json()
+  console.log(`%c[API] Parsing ${res.url}`, 'color: #4CAF50; font-weight: bold;');
+  console.log('Response status:', res.status);
   
-  if (data.data && typeof data.data === 'object') {
-    return key ? data.data[key] : data.data
+  if (!res.ok) {
+    console.error(`%c[API Error] ${res.status} ${res.statusText}`, 'color: #FF5722;');
+    throw new Error(`HTTP error! status: ${res.status}`);
   }
   
-  return key ? data[key] : data
-}
+  const data = await res.json();
+  console.log('Raw API response:', data);
+
+  const result = key ? (data.data?.[key] ?? data[key]) : (data.data ?? data);
+  console.log(`%c[API Parsed] ${key || 'Full Data'}:`, 'color: #2196F3;', result);
+  
+  return result;
+};
 
 export default function Dashboard() {
   const [tokenInfo, setTokenInfo] = useState<TokenInfo>({
     totalSupply: 'Loading...',
-    isTransferable: false,
-    symbol: 'SPHR',
+    isTransferable: true,
+    symbol: 'Loading ...',
     name: 'Loading...'
   })
   const [loading, setLoading] = useState(true)
@@ -49,73 +56,76 @@ export default function Dashboard() {
   const { user } = useAuth()
   const router = useRouter()
 
+  // Authentication check
   useEffect(() => {
     if (!user?.isAuthenticated) {
       router.push('/')
     }
   }, [user, router])
 
+  // Data fetching
   useEffect(() => {
     const fetchTokenData = async () => {
       try {
-        // Fixed API URLs - removed typos and extra parenthesis
-        const [supplyRes, transferableRes, symbolRes, nameRes] = await Promise.all([
-          fetch(`${API_BASE}/api/sphr/totalSupply`),
-          fetch(`${API_BASE}/api/sphr/transferable`),
-          fetch(`${API_BASE}/api/sphr/symbol`), // Fixed 'symbo' to 'symbol'
-          fetch(`${API_BASE}/api/sphr/name`)
-        ])
+        console.groupCollapsed('%c[Data Fetch] Starting request batch', 'color: #9C27B0;');
+        setLoading(true);
+        
+        const endpoints = [
+          `${API_BASE}/api/sphr/totalSupply`,
+          `${API_BASE}/api/sphr/transferable`,
+          `${API_BASE}/api/sphr/symbol`,
+          `${API_BASE}/api/sphr/name`
+        ];
 
-        // Use mock data if any of the API calls fail
+        const responses = await Promise.all(endpoints.map(url => fetch(url)));
+        
         const mockData = {
           totalSupply: '1000000000',
           isTransferable: true,
           symbol: 'SPHR',
           name: 'Sphere Token'
-        }
+        };
 
         try {
-          const totalSupply = await parseResponse(supplyRes, 'totalSupply')
-          const isTransferable = await parseResponse(transferableRes, 'isTransferable')
-          const symbol = await parseResponse(symbolRes, 'symbol')
-          const name = await parseResponse(nameRes, 'name')
+          const [totalSupply, isTransferable, symbol, name] = await Promise.all([
+            parseResponse(responses[0], 'totalSupply'),
+            parseResponse(responses[1], 'transferable'),
+            parseResponse(responses[2], 'symbol'),
+            parseResponse(responses[3], 'name')
+          ]);
 
           setTokenInfo({
             totalSupply: totalSupply || mockData.totalSupply,
-            isTransferable: isTransferable !== undefined ? isTransferable : mockData.isTransferable,
+            isTransferable: Boolean(isTransferable ?? mockData.isTransferable),
             symbol: symbol || mockData.symbol,
             name: name || mockData.name
-          })
+          });
         } catch (parseError) {
-          console.warn('Error parsing API responses:', parseError)
-          setTokenInfo(mockData)
-          setError('Could not parse API responses. Using mock data.')
+          console.error('Parse error:', parseError);
+          setTokenInfo(mockData);
+          setError('API response format error. Using mock data.');
         }
       } catch (error) {
-        console.error('Error fetching token data:', error)
-        // Fallback to mock data on error
-        setTokenInfo({
-          totalSupply: '1000000000',
-          isTransferable: true,
-          symbol: 'SPHR',
-          name: 'Sphere Token'
-        })
-        setError('Failed to fetch token data. Using mock data.')
+        console.error('Fetch error:', error);
+        setError('Network error. Using mock data.');
       } finally {
-        setLoading(false)
+        setLoading(false);
+        console.groupEnd();
       }
+    };
+
+    if (user?.isAuthenticated) {
+      fetchTokenData();
     }
-
-    fetchTokenData()
-  }, [])
-
-  if (!user?.isAuthenticated) return null
+  }, [user?.isAuthenticated]);
 
   const formatSupply = (supply: string) => {
-    const numericValue = parseFloat(supply)
+    const numericValue = parseFloat(supply);
     return isNaN(numericValue) ? supply : 
-      numericValue.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' SPHR'
-  }
+      numericValue.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' SPHR';
+  };
+
+  if (!user?.isAuthenticated) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A0A0A] via-[#111827] to-[#0A0A0A] relative overflow-hidden">
@@ -132,28 +142,18 @@ export default function Dashboard() {
                 {tokenInfo.name} Dashboard
               </h1>
               <p className="mt-2 text-sm text-blue-200">
-                {user.address ? `${user.address.slice(0, 6)}...${user.address.slice(-4)}` : 'No address available'}
+                {user?.address ? `${user.address.slice(0, 6)}...${user.address.slice(-4)}` : 'No address available'}
               </p>
             </div>
           </motion.div>
 
           {error && (
-            <motion.div
-              className="mb-6 p-4 bg-red-900/20 border border-red-800/30 rounded-xl text-red-200 text-sm"
-              variants={fadeIn}
-              initial="initial"
-              animate="animate"
-            >
-              <p>{error}</p>
-            </motion.div>
+            <div className="mb-6 p-4 bg-red-900/20 border border-red-800/30 rounded-xl text-red-200 text-sm">
+              {error}
+            </div>
           )}
 
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-            variants={fadeIn}
-            initial="initial"
-            animate="animate"
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {/* Total Supply Card */}
             <div className="bg-blue-900/20 rounded-xl border border-blue-800/30 shadow-lg backdrop-blur-xl p-6">
               <div className="flex items-center space-x-4">
@@ -178,7 +178,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-sm text-emerald-200">Transfers</p>
                   <p className="text-2xl font-bold text-white mt-1">
-                    {loading ? 'Loading...' : tokenInfo.isTransferable ? 'Active' : 'Locked'}
+                    {loading ? 'Loading...' : tokenInfo.isTransferable ? 'True' : 'False'}
                   </p>
                 </div>
               </div>
@@ -213,7 +213,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </DashboardLayout>
     </div>

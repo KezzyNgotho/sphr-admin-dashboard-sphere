@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
 import { TableRow, TableCell } from '@/components/ui/Table'
+
 import {
   CurrencyDollarIcon,
   TagIcon,
@@ -18,6 +19,8 @@ import {
   BanknotesIcon, 
   ArrowsRightLeftIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
 
 interface TokenMetrics {
   sphrTokenAddress: string
@@ -31,7 +34,27 @@ interface TokenMetrics {
 
 const API_BASE = 'https://rewardsvault-production.up.railway.app'
 
+// Add this near the top of your component
+console.log("[Auth] Initializing TokenPage component");
+
 export default function TokenPage() {
+  const { user } = useAuth()
+  const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  // Authentication check with logging
+  useEffect(() => {
+    console.log("[Auth] Checking authentication status");
+    if (!user?.isAuthenticated) {
+      console.log("[Auth] User not authenticated, redirecting to home");
+      router.push('/')
+    } else {
+      console.log("[Auth] User authenticated:", user.address);
+      setIsAuthenticated(true)
+    }
+  }, [user, router])
+
+  
   const [metrics, setMetrics] = useState<TokenMetrics>({
     sphrTokenAddress: '0x000...0000',
     usdcTokenAddress: '0x000...0000',
@@ -47,8 +70,15 @@ export default function TokenPage() {
   const [calculationLoading, setCalculationLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [usingMockData, setUsingMockData] = useState(false)
+  // Inside your component
+
+const [newSphrReserve, setNewSphrReserve] = useState('');
+const [newUsdcReserve, setNewUsdcReserve] = useState('');
+
   
   // Add new state variables
+  const [withdrawTo, setWithdrawTo] = useState('')
+  const [adminPrivateKey, setAdminPrivateKey] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [withdrawToken, setWithdrawToken] = useState('')
   const [newMinRate, setNewMinRate] = useState('')
@@ -56,7 +86,6 @@ export default function TokenPage() {
   const [txStatus, setTxStatus] = useState<{ [key: string]: string }>({})
   const [isProcessing, setIsProcessing] = useState({
     withdraw: false,
-    updateRate: false,
     updatePool: false
   })
 
@@ -134,7 +163,7 @@ export default function TokenPage() {
 
         // Extract decay factor
         if (results.decay?.status === 'success' && results.decay?.data?.decayFactor) {
-          metricsData.reserveDecayFactor = parseFloat(results.decay.data.decayFactor) / 100; // Convert to decimal
+          metricsData.reserveDecayFactor = parseFloat(results.decay.data.decayFactor); // Convert to decimal
         }
 
         // Extract precision
@@ -197,7 +226,7 @@ export default function TokenPage() {
     
     try {
       const response = await fetch(
-        `${API_BASE}/api/exchange/calculate-reward?sphrAmount=100`,
+        `${API_BASE}/api/exchange/calculate-reward?sphrAmount=1`,
         {
           method: 'GET',
           headers: {
@@ -298,189 +327,131 @@ export default function TokenPage() {
     }
   };
 
-  // Add these handler functions
-  
-  const handleWithdraw = async () => {
-    setIsProcessing(prev => ({...prev, withdraw: true}))
-    setTxStatus({})
-    
-    // Validate inputs before sending
-    if (!withdrawAmount || isNaN(parseFloat(withdrawAmount)) || parseFloat(withdrawAmount) <= 0) {
-      setTxStatus({ withdraw: 'Please enter a valid amount greater than 0' })
-      setIsProcessing(prev => ({...prev, withdraw: false}))
-      return
-    }
-    
-    if (!withdrawToken || !withdrawToken.trim().startsWith('0x')) {
-      setTxStatus({ withdraw: 'Please enter a valid token address (starting with 0x)' })
-      setIsProcessing(prev => ({...prev, withdraw: false}))
-      return
-    }
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/exchange/admin/withdraw-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: parseFloat(withdrawAmount),
-          tokenAddress: withdrawToken.trim()
-        })
-      })
-      
-      // For 400 errors, try to get the validation error message
-      if (response.status === 400) {
-        const contentType = response.headers.get('content-type')
-        
-        if (contentType && contentType.includes('application/json')) {
-          const errorData = await response.json()
-          throw new Error(errorData.message || 'Invalid input: The server rejected the request')
-        } else {
-          throw new Error('Invalid input: The server rejected the request')
-        }
-      }
-      
-      // For other non-OK responses
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`)
-      }
-      
-      // Check content type before parsing
-      const contentType = response.headers.get('content-type')
-      
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Server returned non-JSON response')
-      }
-      
-      const data = await response.json()
-      setTxStatus({ withdraw: 'Withdrawal successful!' })
-      setWithdrawAmount('')
-      setWithdrawToken('')
-    } catch (error) {
-      console.error('Withdrawal error:', error)
-      setTxStatus({ withdraw: error instanceof Error ? error.message : 'Unknown error' })
-    } finally {
-      setIsProcessing(prev => ({...prev, withdraw: false}))
-    }
+ // Authentication check with logging
+ useEffect(() => {
+  console.log("[Auth] Checking authentication status");
+  if (!user?.isAuthenticated) {
+    console.log("[Auth] User not authenticated, redirecting to home");
+    router.push('/')
+  } else {
+    console.log("[Auth] User authenticated:", user.address);
+    setIsAuthenticated(true)
   }
+}, [user, router])
+
+// Update the handleWithdraw function
+const handleWithdraw = async () => {
+  console.log("[Withdraw] Initiated withdrawal process");
   
-  const handleUpdateRewardPool = async () => {
-    setIsProcessing(prev => ({...prev, updatePool: true}))
-    setTxStatus({})
-    
-    // Validate input before sending
-    if (!newRewardPool || !newRewardPool.trim().startsWith('0x')) {
-      setTxStatus({ rewardPool: 'Please enter a valid pool address (starting with 0x)' })
-      setIsProcessing(prev => ({...prev, updatePool: false}))
-      return
-    }
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/exchange/admin/update-reward-pool`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          newPool: newRewardPool.trim()
-        })
-      })
-      
-      // For 400 errors, try to get the validation error message
-      if (response.status === 400) {
-        const contentType = response.headers.get('content-type')
-        
-        if (contentType && contentType.includes('application/json')) {
-          const errorData = await response.json()
-          throw new Error(errorData.message || 'Invalid input: The server rejected the request')
-        } else {
-          throw new Error('Invalid input: The server rejected the request')
-        }
-      }
-      
-      // For other non-OK responses
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`)
-      }
-      
-      // Check content type before parsing
-      const contentType = response.headers.get('content-type')
-      
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Server returned non-JSON response')
-      }
-      
-      const data = await response.json()
-      setTxStatus({ rewardPool: 'Reward pool updated!' })
-      setNewRewardPool('')
-    } catch (error) {
-      console.error('Update reward pool error:', error)
-      setTxStatus({ rewardPool: error instanceof Error ? error.message : 'Unknown error' })
-    } finally {
-      setIsProcessing(prev => ({...prev, updatePool: false}))
-    }
+  if (!isAuthenticated || !user?.address) {
+    console.error("[Auth] Withdrawal blocked - no authenticated user");
+    setTxStatus({ withdraw: 'Please connect your wallet first' });
+    return;
   }
 
-  const handleUpdateMinRate = async () => {
-    setIsProcessing(prev => ({...prev, updateRate: true}))
-    setTxStatus({})
-    
-    // Validate input before sending
-    if (!newMinRate || isNaN(parseFloat(newMinRate))) {
-      setTxStatus({ minRate: 'Please enter a valid number for the minimum rate' })
-      setIsProcessing(prev => ({...prev, updateRate: false}))
-      return
-    }
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/exchange/admin/update-min-rate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          newRate: parseFloat(newMinRate) // Ensure it's a number, not a string
-        })
-      })
-      
-      // For 400 errors, try to get the validation error message
-      if (response.status === 400) {
-        const contentType = response.headers.get('content-type')
-        
-        if (contentType && contentType.includes('application/json')) {
-          const errorData = await response.json()
-          throw new Error(errorData.message || 'Invalid input: The server rejected the request')
-        } else {
-          throw new Error('Invalid input: The server rejected the request')
-        }
-      }
-      
-      // For other non-OK responses
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`)
-      }
-      
-      // Check content type before parsing
-      const contentType = response.headers.get('content-type')
-      
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Server returned non-JSON response')
-      }
-      
-      const data = await response.json()
-      setTxStatus({ minRate: 'Minimum rate updated successfully!' })
-      setNewMinRate('')
-    } catch (error) {
-      console.error('Update min rate error:', error)
-      setTxStatus({ minRate: error instanceof Error ? error.message : 'Unknown error' })
-    } finally {
-      setIsProcessing(prev => ({...prev, updateRate: false}))
-    }
+  console.log("[Withdraw] Using adminPrivateKey:", user.address);
+  
+  setIsProcessing(prev => ({ ...prev, withdraw: true }));
+  setTxStatus({});
+  
+  // Validate inputs
+  if (!withdrawTo || !withdrawTo.trim().startsWith('0x')) {
+    console.error("[Validation] Invalid recipient address");
+    setTxStatus({ withdraw: 'Please enter a valid recipient address (starting with 0x)' });
+    setIsProcessing(prev => ({ ...prev, withdraw: false }));
+    return;
   }
-  
-  
 
+  try {
+    console.log("[API] Sending withdrawal request with:", {
+      adminPrivateKey: user.address,
+      tokenAddress: withdrawToken,
+      to: withdrawTo,
+      amount: withdrawAmount
+    });
+
+    const response = await fetch(`${API_BASE}/api/exchange/admin/withdraw-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        adminPrivateKey: user.address, // Explicitly using user's address
+        tokenAddress: withdrawToken.trim(),
+        to: withdrawTo.trim(),
+        amount: parseFloat(withdrawAmount)
+      })
+    });
+
+    console.log("[API] Response status:", response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("[API] Error response:", errorData);
+      throw new Error(errorData.message || 'Withdrawal failed');
+    }
+
+    console.log("[Withdraw] Successfully processed");
+    setTxStatus({ withdraw: 'Withdrawal successful!' });
+    
+  } catch (error) {
+    console.error("[Withdraw] Error:", error);
+    setTxStatus({ withdraw: error instanceof Error ? error.message : 'Withdrawal failed' });
+  } finally {
+    setIsProcessing(prev => ({ ...prev, withdraw: false }));
+  }
+};
+
+// Update the handleUpdateRewardPool function
+const handleUpdateRewardPool = async () => {
+  console.log("[PoolUpdate] Initiated reward pool update");
+  
+  if (!isAuthenticated || !user?.address) {
+    console.error("[Auth] Update blocked - no authenticated user");
+    setTxStatus({ rewardPool: 'Please connect your wallet first' });
+    return;
+  }
+
+  console.log("[PoolUpdate] Using adminPrivateKey:", user.address);
+  
+  setIsProcessing(prev => ({ ...prev, updatePool: true }));
+  setTxStatus({});
+
+  try {
+    console.log("[API] Sending pool update request with:", {
+      adminPrivateKey: user.address,
+      newPool: newRewardPool,
+      newSphrReserve,
+      newUsdcReserve
+    });
+
+    const response = await fetch(`${API_BASE}/api/exchange/admin/update-reward-pool`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        adminPrivateKey: user.address, // Explicitly using user's address
+        newPool: newRewardPool.trim(),
+        newSphrReserve: newSphrReserve.trim(),
+        newUsdcReserve: newUsdcReserve.trim()
+      })
+    });
+
+    console.log("[API] Response status:", response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("[API] Error response:", errorData);
+      throw new Error(errorData.message || 'Update failed');
+    }
+
+    console.log("[PoolUpdate] Successfully processed");
+    setTxStatus({ rewardPool: 'Reward pool updated successfully!' });
+    
+  } catch (error) {
+    console.error("[PoolUpdate] Error:", error);
+    setTxStatus({ rewardPool: error instanceof Error ? error.message : 'Update failed' });
+  } finally {
+    setIsProcessing(prev => ({ ...prev, updatePool: false }));
+  }
+};
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -557,7 +528,7 @@ export default function TokenPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold text-white">
-                  {isNaN(metrics.reserveDecayFactor) ? '0.10' : metrics.reserveDecayFactor.toFixed(2)}x
+                  {isNaN(metrics.reserveDecayFactor) ? '0.10' : metrics.reserveDecayFactor.toFixed(2)}
                 </p>
                 <p className="text-xs text-purple-400 mt-1">Per epoch decay rate</p>
               </div>
@@ -608,6 +579,96 @@ export default function TokenPage() {
             </div>
           </Card>
           
+         
+        </div>
+        
+        {/* Admin Controls Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Admin Controls Grid */}
+
+  <Card title="Withdraw Tokens" icon={ArrowDownTrayIcon} color="rose">
+    <div className="space-y-4 mt-4">
+      <input
+        type="number"
+        placeholder="Amount"
+        value={withdrawAmount}
+        onChange={(e) => setWithdrawAmount(e.target.value)}
+        className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none"
+      />
+      <input
+        type="text"
+        placeholder="Token Address"
+        value={withdrawToken}
+        onChange={(e) => setWithdrawToken(e.target.value)}
+        className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none"
+      />
+      <input
+        type="text"
+        placeholder="Withdraw To Address"
+        value={withdrawTo} // Ensure you have this state defined
+        onChange={(e) => setWithdrawTo(e.target.value)} // Ensure you have this state defined
+        className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none"
+      />
+      <button
+        onClick={handleWithdraw}
+        disabled={isProcessing.withdraw}
+        className={`w-full py-2 px-4 rounded-lg transition-colors 
+          ${isProcessing.withdraw ? 'bg-rose-700' : 'bg-rose-600 hover:bg-rose-700'} 
+          text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+      >
+        {isProcessing.withdraw ? 'Processing...' : 'Withdraw'}
+      </button>
+      {txStatus.withdraw && (
+        <p className={`text-sm ${txStatus.withdraw.includes('success') ? 'text-green-400' : 'text-rose-400'}`}>
+          {txStatus.withdraw}
+        </p>
+      )}
+    </div>
+  </Card>
+
+  
+{/* Update Reward Pool Card */}
+ {/* Update Reward Pool Card */}
+ <Card title="Update Reward Pool" icon={BanknotesIcon} color="emerald">
+            <div className="space-y-4 mt-4">
+              <input
+                type="text"
+                placeholder="New Pool Address"
+                value={newRewardPool}
+                onChange={(e) => setNewRewardPool(e.target.value)}
+                className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="New SPHR Reserve (with 18 decimals)"
+                value={newSphrReserve}
+                onChange={(e) => setNewSphrReserve(e.target.value)}
+                className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="New USDC Reserve (with 18 decimals)"
+                value={newUsdcReserve}
+                onChange={(e) => setNewUsdcReserve(e.target.value)}
+                className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              />
+              <button
+                onClick={handleUpdateRewardPool}
+                disabled={isProcessing.updatePool}
+                className={`w-full py-2 px-4 rounded-lg transition-colors 
+                  ${isProcessing.updatePool ? 'bg-emerald-700' : 'bg-emerald-600 hover:bg-emerald-700'} 
+                  text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {isProcessing.updatePool ? 'Updating...' : 'Update Pool'}
+              </button>
+              {txStatus.rewardPool && (
+                <p className={`text-sm ${txStatus.rewardPool.includes('success') ? 'text-green-400' : 'text-rose-  400'}`}>
+                  {txStatus.rewardPool}
+                </p>
+              )}
+            </div>
+          </Card>
+       
           <Card title="Rewards System" icon={ArrowPathIcon} color="rose">
             <div className="flex items-center justify-between">
               <div>
@@ -621,91 +682,6 @@ export default function TokenPage() {
               <div className="p-3 bg-rose-900/20 rounded-lg backdrop-blur-sm">
                 <ArrowPathIcon className="h-6 w-6 text-rose-400" />
               </div>
-            </div>
-          </Card>
-        </div>
-        
-        {/* Admin Controls Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card title="Withdraw Tokens" icon={ArrowDownTrayIcon} color="rose">
-            <div className="space-y-4 mt-4">
-              <input
-                type="number"
-                placeholder="Amount"
-                value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(e.target.value)}
-                className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none"
-              />
-              <input
-                type="text"
-                placeholder="Token Address"
-                value={withdrawToken}
-                onChange={(e) => setWithdrawToken(e.target.value)}
-                className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none"
-              />
-              <button
-                onClick={handleWithdraw}
-                disabled={isProcessing.withdraw}
-                className="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing.withdraw ? 'Processing...' : 'Withdraw'}
-              </button>
-              {txStatus.withdraw && (
-                <p className={`text-sm ${txStatus.withdraw.includes('success') ? 'text-green-400' : 'text-rose-400'}`}>
-                  {txStatus.withdraw}
-                </p>
-              )}
-            </div>
-          </Card>
-          
-          {/* Update Min Rate Card */}
-          <Card title="Update Minimum Rate" icon={ArrowsRightLeftIcon} color="amber">
-            <div className="space-y-4 mt-4">
-              <input
-                type="number"
-                step="0.0001"
-                placeholder="New Minimum Rate"
-                value={newMinRate}
-                onChange={(e) => setNewMinRate(e.target.value)}
-                className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-              />
-              <button
-                onClick={handleUpdateMinRate}
-                disabled={isProcessing.updateRate}
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing.updateRate ? 'Updating...' : 'Update Rate'}
-              </button>
-              {txStatus.minRate && (
-                <p className={`text-sm ${txStatus.minRate.includes('updated') ? 'text-green-400' : 'text-amber-400'}`}>
-                  {txStatus.minRate}
-                </p>
-              )}
-            </div>
-          </Card>
-          
-          {/* Update Reward Pool Card */}
-          <Card title="Update Reward Pool" icon={BanknotesIcon} color="emerald">
-            <div className="space-y-4 mt-4">
-              <input
-                type="text"
-                placeholder="New Pool Address"
-                value={newRewardPool}
-                onChange={(e) => setNewRewardPool(e.target.value)}
-                className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-              />
-              <button
-                onClick={handleUpdateRewardPool}
-                disabled={isProcessing.updatePool}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing.updatePool ? 'Updating...' : 'Update Pool'}
-              </button>
-              {txStatus.rewardPool && (
-                <p className={`text-sm ${txStatus.rewardPool.includes('updated') ? 'text-green-400' : 'text-emerald-400'}`}>
-                  {txStatus.rewardPool}
-                </p>
-              )}
             </div>
           </Card>
         </div>
