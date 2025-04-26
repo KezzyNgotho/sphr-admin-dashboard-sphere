@@ -264,13 +264,13 @@ useEffect(() => {
       let endpoint = '';
       switch(action) {
         case 'grant':
-          endpoint = `${API_BASE}/exchange/admin/grant-role`;
+          endpoint = `${API_BASE}/api/exchange/admin/grant-role`;
           break;
         case 'revoke':
-          endpoint = `${API_BASE}/exchange/admin/revoke-role`;
+          endpoint = `${API_BASE}/api/exchange/admin/revoke-role`;
           break;
         case 'renounce':
-          endpoint = `${API_BASE}/exchange/roles/renounce`;
+          endpoint = `${API_BASE}/api/exchange/roles/renounce`;
           break;
         default:
           throw new Error('Invalid action');
@@ -281,7 +281,7 @@ useEffect(() => {
       const payload = {
         role: roleAddress,
         account: address,
-        ...(action !== 'renounce' && { adminAddress: user?.address })
+        ...(action !== 'renounce' && { adminPrivateKey: user?.address })
       }
   
       console.log('[API] Request payload:', payload)
@@ -348,7 +348,7 @@ useEffect(() => {
       try {
         const securePayload = {
           enabled,
-          adminAddress: user.address
+          adminPrivateKey: user.address
         };
   
         console.log('[Toggle] Sending state:', securePayload);

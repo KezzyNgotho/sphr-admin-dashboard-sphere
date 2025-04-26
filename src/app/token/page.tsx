@@ -148,7 +148,7 @@ const [newUsdcReserve, setNewUsdcReserve] = useState('');
           precision: 18,
           sphrReserve: '0',
           usdcReserve: '0',
-          usesDecayingRewards: true
+          usesDecayingRewards: false
         };
 
         // Extract SPHR token address
@@ -428,7 +428,7 @@ const handleUpdateRewardPool = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         adminPrivateKey: user.address, // Explicitly using user's address
-        newPool: newRewardPool.trim(),
+       //newPool: newRewardPool.trim(),
         newSphrReserve: newSphrReserve.trim(),
         newUsdcReserve: newUsdcReserve.trim()
       })
