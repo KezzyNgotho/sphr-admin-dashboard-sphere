@@ -243,7 +243,7 @@ useEffect(() => {
       toast.error('Error checking role access')
     }
   }
-  const modifyRole = async (action: 'grant' | 'revoke' | 'renounce', role: string, address: string) => {
+  const modifyRole = async (action: 'grant' | 'renounce' | 'revoke', role: string, address: string) => {
     if (!user?.address && action !== 'renounce') {
       throw new Error('Authentication required')
     }
@@ -279,7 +279,9 @@ useEffect(() => {
       console.log('[API] Modifying role endpoint:', endpoint)
       
       const payload = {
+        
         role: roleAddress,
+        adminPrivateKey: user?.address,
         account: address,
         ...(action !== 'renounce' && { adminPrivateKey: user?.address })
       }
@@ -622,6 +624,13 @@ useEffect(() => {
                 className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg disabled:opacity-50"
               >
                 Revoke Role
+              </button>
+              <button
+                onClick={() => renounce.mutate({ role: selectedRole, address: addressToModify })}
+                disabled={!selectedRole || !isAddressValid}
+                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg disabled:opacity-50"
+              >
+                Renounce Role
               </button>
             </div>
           </div>

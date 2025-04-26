@@ -418,7 +418,7 @@ const handleUpdateRewardPool = async () => {
   try {
     console.log("[API] Sending pool update request with:", {
       adminPrivateKey: user.address,
-      newPool: newRewardPool,
+      
       newSphrReserve,
       newUsdcReserve
     });
@@ -428,7 +428,7 @@ const handleUpdateRewardPool = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         adminPrivateKey: user.address, // Explicitly using user's address
-       //newPool: newRewardPool.trim(),
+       
         newSphrReserve: newSphrReserve.trim(),
         newUsdcReserve: newUsdcReserve.trim()
       })
@@ -631,23 +631,24 @@ const handleUpdateRewardPool = async () => {
  {/* Update Reward Pool Card */}
  <Card title="Update Reward Pool" icon={BanknotesIcon} color="emerald">
             <div className="space-y-4 mt-4">
-              <input
-                type="text"
-                placeholder="New Pool Address"
-                value={newRewardPool}
-                onChange={(e) => setNewRewardPool(e.target.value)}
-                className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+             {/*  <input
+              type='text'
+              placeholder='AdminPrivateKey'
+              value={adminPrivateKey}
+              onChange={(e) => setAdminPrivateKey(e.target.value)}
+               className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
+             */}
               <input
                 type="text"
-                placeholder="New SPHR Reserve (with 18 decimals)"
+                placeholder="New SPHR Reserve "
                 value={newSphrReserve}
                 onChange={(e) => setNewSphrReserve(e.target.value)}
                 className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
               <input
                 type="text"
-                placeholder="New USDC Reserve (with 18 decimals)"
+                placeholder="New USDC Reserve "
                 value={newUsdcReserve}
                 onChange={(e) => setNewUsdcReserve(e.target.value)}
                 className="w-full bg-gray-800/50 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
