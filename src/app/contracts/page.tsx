@@ -10,8 +10,8 @@ import {
   UserCircleIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'react-hot-toast'
-import DashboardLayout from '@/components/layout/DashboardLayout'
-import { useAuth } from '@/contexts/AuthContext'
+import DashboardLayout from '@/app/layout/DashboardLayout'
+import { useAuth } from '@/app/contexts/AuthContext'
 const API_BASE = 'https://rewardsvault-production.up.railway.app/api/'
 
 type ContractAction = 'pause' | 'unpause' | 'upgrade'

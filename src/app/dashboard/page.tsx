@@ -8,8 +8,8 @@ import {
   TagIcon,
   DocumentTextIcon
 } from '@heroicons/react/24/outline'
-import { useAuth } from '@/contexts/AuthContext'
-import DashboardLayout from '@/components/layout/DashboardLayout'
+import { useAuth } from '@/app/contexts/AuthContext'
+import DashboardLayout from '@/app/layout/DashboardLayout'
 
 const API_BASE = 'https://rewardsvault-production.up.railway.app'
 

@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import DashboardLayout from '@/components/layout/DashboardLayout'
-import Card from '@/components/ui/Card'
-import Table from '@/components/ui/Table'
-import { TableRow, TableCell } from '@/components/ui/Table'
+import DashboardLayout from '@/app/layout/DashboardLayout'
+import Card from '@/app/ui/Card'
+//import Table from '@/components/ui/Table'
+//import { TableRow, TableCell } from '@/components/ui/Table';
 
 import {
   CurrencyDollarIcon,
@@ -17,9 +17,9 @@ import {
   ExclamationCircleIcon,
   ArrowDownTrayIcon, 
   BanknotesIcon, 
-  ArrowsRightLeftIcon
+  //ArrowsRightLeftIcon
 } from '@heroicons/react/24/outline';
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/app/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 
 interface TokenMetrics {

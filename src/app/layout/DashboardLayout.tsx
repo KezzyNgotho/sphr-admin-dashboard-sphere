@@ -21,7 +21,7 @@ import {
   UserIcon
 } from '@heroicons/react/24/outline'
 import { motion } from 'framer-motion'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/app/contexts/AuthContext'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },

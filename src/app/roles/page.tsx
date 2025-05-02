@@ -11,8 +11,8 @@ import {
   ArrowPathIcon,
   NoSymbolIcon
 } from '@heroicons/react/24/outline'
-import DashboardLayout from '@/components/layout/DashboardLayout'
-import { useAuth } from '@/contexts/AuthContext'
+import DashboardLayout from '@/app/layout/DashboardLayout'
+import { useAuth } from '@/app/contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 
 const API_BASE = 'https://rewardsvault-production.up.railway.app'
